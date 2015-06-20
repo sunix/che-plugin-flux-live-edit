@@ -63,7 +63,7 @@ public class CheFluxLiveEditExtension {
 
 
     @Inject
-    public CheFluxLiveEditExtension(EventBus eventBus, final RunnerServiceClient runnerService, final                                      Provider<AsyncCallbackBuilder<Array<ApplicationProcessDescriptor>>> callbackBuilderProvider,                                 final     DtoUnmarshallerFactory dtoUnmarshallerFactory) {
+    public CheFluxLiveEditExtension(EventBus eventBus, final RunnerServiceClient runnerService, final Provider<AsyncCallbackBuilder<Array<ApplicationProcessDescriptor>>> callbackBuilderProvider, final DtoUnmarshallerFactory dtoUnmarshallerFactory) {
 
         SocketIOResources ioresources = GWT.create(SocketIOResources.class);
         ScriptInjector.fromString(ioresources.socketIo().getText()).setWindow(ScriptInjector.TOP_WINDOW).inject();
@@ -72,28 +72,28 @@ public class CheFluxLiveEditExtension {
             @Override
             public void onOpenProject(OpenProjectEvent event) {
                 runnerService.getRunningProcesses(event.getProjectName(), callbackBuilderProvider
-                    .get()
-                    .unmarshaller(dtoUnmarshallerFactory.newArrayUnmarshaller(ApplicationProcessDescriptor.class))
-                    .success(new SuccessCallback<Array<ApplicationProcessDescriptor>>() {
-                        @Override
-                        public void onSuccess(Array<ApplicationProcessDescriptor> result) {
-                            if (result.isEmpty()) {
-                                return;
-                            }
-                            for (ApplicationProcessDescriptor applicationProcessDescriptor : result.asIterable()) {
-                                if(connectIfFluxMicroservice(applicationProcessDescriptor)){
-                                    break;
-                                }
-                            }
-                        }
-                    })
-                    .failure(new FailureCallback() {
-                        @Override
-                        public void onFailure(@Nonnull Throwable reason) {
-                            Log.error(GetRunningProcessesAction.class, reason);
-                        }
-                    })
-                    .build());
+                                                                                                 .get()
+                                                                                                 .unmarshaller(dtoUnmarshallerFactory.newArrayUnmarshaller(ApplicationProcessDescriptor.class))
+                                                                                                 .success(new SuccessCallback<Array<ApplicationProcessDescriptor>>() {
+                                                                                                     @Override
+                                                                                                     public void onSuccess(Array<ApplicationProcessDescriptor> result) {
+                                                                                                         if (result.isEmpty()) {
+                                                                                                             return;
+                                                                                                         }
+                                                                                                         for (ApplicationProcessDescriptor applicationProcessDescriptor : result.asIterable()) {
+                                                                                                             if (connectIfFluxMicroservice(applicationProcessDescriptor)) {
+                                                                                                                 break;
+                                                                                                             }
+                                                                                                         }
+                                                                                                     }
+                                                                                                 })
+                                                                                                 .failure(new FailureCallback() {
+                                                                                                     @Override
+                                                                                                     public void onFailure(@Nonnull Throwable reason) {
+                                                                                                         Log.error(GetRunningProcessesAction.class, reason);
+                                                                                                     }
+                                                                                                 })
+                                                                                                 .build());
             }
         });
 
@@ -111,7 +111,6 @@ public class CheFluxLiveEditExtension {
                             new DocumentReadyHandler() {
                                 @Override
                                 public void onDocumentReady(DocumentReadyEvent event) {
-                                    Log.info(getClass(), "document ready !" + event.getDocument().getFile().getPath());
                                     liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
 
                                     final DocumentHandle documentHandle = event.getDocument().getDocumentHandle();
@@ -125,9 +124,13 @@ public class CheFluxLiveEditExtension {
                                                 String project = fullPath.substring(0, fullPath.indexOf('/'));
                                                 String resource = fullPath.substring(fullPath.indexOf('/') + 1);
                                                 String text = JsonUtils.escapeValue(event.getText());
-                                                Log.info(CheFluxLiveEditExtension.class, "text to emit " + text);
-                                                String json = "{\"username\":\"USER\",\"project\":\"" + project + "\",\"resource\":\"" + resource + "\",\"offset\":" + event.getOffset() + ",\"removedCharCount\":" + event.getRemoveCharCount() + ",\"addedCharacters\":" + text + "}";
-                                                Log.info(CheFluxLiveEditExtension.class, "emit liveResourceChanged if " + isUpdatingModel + " " + json);
+                                                String json = "{"
+                                                              + "\"username\":\"USER\","
+                                                              + "\"project\":\"" + project + "\","
+                                                              + "\"resource\":\"" + resource + "\","
+                                                              + "\"offset\":" + event.getOffset() + ","
+                                                              + "\"removedCharCount\":" + event.getRemoveCharCount() + ","
+                                                              + "\"addedCharacters\":" + text + "}";
                                                 if (isUpdatingModel) {
                                                     return;
                                                 }
@@ -157,11 +160,6 @@ public class CheFluxLiveEditExtension {
             case FAILED:
             case STOPPED:
             case CANCELLED:
-                if (socket != null) {
-                    // TODO implement socket disconnect
-                    // socket.
-//                    socket = null;
-                }
                 break;
             default:
         }
@@ -182,31 +180,19 @@ public class CheFluxLiveEditExtension {
                 new Timer() {
                     @Override
                     public void run() {
-
                         socket.emit("connectToChannel", JsonUtils.safeEval("{\"channel\" : \"USER\"}"));
-                        // 5:1+::{"name":"connectToChannel","args":[{"channel":"USER"}]}
-
-
-                        // TODO socket.emit("liveResourceStarted", JsonUtils.safeEval("{\"channel\" : \"USER\"}"));
 
                         socket.on("liveResourceChanged", new Consumer<FluxResourceChangedEventDataOverlay>() {
                             @Override
                             public void accept(FluxResourceChangedEventDataOverlay event) {
-                                Log.info(getClass(), "live resource changed: " + event.getProject() + " resource: " + event.getResource() + " offset: " + event.getOffset() + " addedChars: " + event.getAddedCharacters() + " removed chars: " + event.getRemovedCharCount());
-
                                 Document document = liveDocuments.get("/" + event.getProject() + "/" + event.getResource());
                                 if (document == null) {
-                                    Log.info(getClass(), "no live doc for " + event.getProject() + "/" + event.getResource());
                                     return;
                                 }
-
-                                // document.removeDocumentListener(documentListener);
                                 isUpdatingModel = true;
                                 document.replace(event.getOffset(), event.getRemovedCharCount(), event.getAddedCharacters());
-                                // document.addDocumentListener(documentListener);
                                 isUpdatingModel = false;
                             }
-
                         });
 
                     }
