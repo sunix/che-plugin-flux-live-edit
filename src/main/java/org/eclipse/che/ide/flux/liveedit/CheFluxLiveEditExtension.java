@@ -17,8 +17,16 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 import org.eclipse.che.api.runner.dto.ApplicationProcessDescriptor;
+import org.eclipse.che.api.runner.gwt.client.RunnerServiceClient;
+import org.eclipse.che.ide.api.event.OpenProjectEvent;
+import org.eclipse.che.ide.api.event.OpenProjectHandler;
 import org.eclipse.che.ide.api.extension.Extension;
+import org.eclipse.che.ide.collections.Array;
+import org.eclipse.che.ide.ext.runner.client.callbacks.AsyncCallbackBuilder;
+import org.eclipse.che.ide.ext.runner.client.callbacks.FailureCallback;
+import org.eclipse.che.ide.ext.runner.client.callbacks.SuccessCallback;
 import org.eclipse.che.ide.ext.runner.client.models.Runner;
+import org.eclipse.che.ide.ext.runner.client.runneractions.impl.GetRunningProcessesAction;
 import org.eclipse.che.ide.ext.runner.client.runneractions.impl.launch.common.RunnerApplicationStatusEvent;
 import org.eclipse.che.ide.ext.runner.client.runneractions.impl.launch.common.RunnerApplicationStatusEventHandler;
 import org.eclipse.che.ide.jseditor.client.document.Document;
@@ -27,6 +35,7 @@ import org.eclipse.che.ide.jseditor.client.events.DocumentChangeEvent;
 import org.eclipse.che.ide.jseditor.client.events.DocumentChangeHandler;
 import org.eclipse.che.ide.jseditor.client.events.DocumentReadyEvent;
 import org.eclipse.che.ide.jseditor.client.events.DocumentReadyHandler;
+import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.socketio.Consumer;
 import org.eclipse.che.ide.socketio.SocketIOOverlay;
 import org.eclipse.che.ide.socketio.SocketIOResources;
@@ -38,6 +47,7 @@ import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.core.shared.GWT;
 import com.google.gwt.user.client.Timer;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.web.bindery.event.shared.EventBus;
 
@@ -53,38 +63,47 @@ public class CheFluxLiveEditExtension {
 
 
     @Inject
-    public CheFluxLiveEditExtension(EventBus eventBus) {
+    public CheFluxLiveEditExtension(EventBus eventBus, final RunnerServiceClient runnerService, final                                      Provider<AsyncCallbackBuilder<Array<ApplicationProcessDescriptor>>> callbackBuilderProvider,                                 final     DtoUnmarshallerFactory dtoUnmarshallerFactory) {
+
         SocketIOResources ioresources = GWT.create(SocketIOResources.class);
         ScriptInjector.fromString(ioresources.socketIo().getText()).setWindow(ScriptInjector.TOP_WINDOW).inject();
+
+        eventBus.addHandler(OpenProjectEvent.TYPE, new OpenProjectHandler() {
+            @Override
+            public void onOpenProject(OpenProjectEvent event) {
+                runnerService.getRunningProcesses(event.getProjectName(), callbackBuilderProvider
+                    .get()
+                    .unmarshaller(dtoUnmarshallerFactory.newArrayUnmarshaller(ApplicationProcessDescriptor.class))
+                    .success(new SuccessCallback<Array<ApplicationProcessDescriptor>>() {
+                        @Override
+                        public void onSuccess(Array<ApplicationProcessDescriptor> result) {
+                            if (result.isEmpty()) {
+                                return;
+                            }
+                            for (ApplicationProcessDescriptor applicationProcessDescriptor : result.asIterable()) {
+                                if(connectIfFluxMicroservice(applicationProcessDescriptor)){
+                                    break;
+                                }
+                            }
+                        }
+                    })
+                    .failure(new FailureCallback() {
+                        @Override
+                        public void onFailure(@Nonnull Throwable reason) {
+                            Log.error(GetRunningProcessesAction.class, reason);
+                        }
+                    })
+                    .build());
+            }
+        });
 
         eventBus.addHandler(RunnerApplicationStatusEvent.TYPE, new RunnerApplicationStatusEventHandler() {
             @Override
             public void onRunnerStatusChanged(@Nonnull Runner runner) {
                 ApplicationProcessDescriptor descriptor = runner.getDescriptor();
-                if (descriptor == null) {
-                    return;
-                }
-                String fluxPort = descriptor.getPortMapping().getPorts().get("3000");
-                if (fluxPort == null) {
-                    return;
-                }
-                String host = descriptor.getPortMapping().getHost();
-
-                switch (descriptor.getStatus()) {
-                    case RUNNING:
-                        connectToFlux(descriptor, host, fluxPort);
-                        break;
-                    case FAILED:
-                    case STOPPED:
-                    case CANCELLED:
-                        if (socket != null) {
-                            // TODO implement socket disconnect
-                            // socket.
-                        }
-                        break;
-                    default:
-                }
+                connectIfFluxMicroservice(descriptor);
             }
+
         });
 
 
@@ -119,6 +138,34 @@ public class CheFluxLiveEditExtension {
                                 }
                             });
 
+    }
+
+    private boolean connectIfFluxMicroservice(ApplicationProcessDescriptor descriptor) {
+        if (descriptor == null) {
+            return false;
+        }
+        String fluxPort = descriptor.getPortMapping().getPorts().get("3000");
+        if (fluxPort == null) {
+            return false;
+        }
+        String host = descriptor.getPortMapping().getHost();
+
+        switch (descriptor.getStatus()) {
+            case RUNNING:
+                connectToFlux(descriptor, host, fluxPort);
+                return true;
+            case FAILED:
+            case STOPPED:
+            case CANCELLED:
+                if (socket != null) {
+                    // TODO implement socket disconnect
+                    // socket.
+//                    socket = null;
+                }
+                break;
+            default:
+        }
+        return false;
     }
 
     protected void connectToFlux(ApplicationProcessDescriptor descriptor, final String host, final String fluxPort) {
