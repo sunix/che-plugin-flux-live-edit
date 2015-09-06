@@ -12,6 +12,7 @@ package org.eclipse.che.ide.flux.liveedit;
 
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
@@ -21,7 +22,6 @@ import org.eclipse.che.api.runner.gwt.client.RunnerServiceClient;
 import org.eclipse.che.ide.api.event.OpenProjectEvent;
 import org.eclipse.che.ide.api.event.OpenProjectHandler;
 import org.eclipse.che.ide.api.extension.Extension;
-import org.eclipse.che.ide.collections.Array;
 import org.eclipse.che.ide.ext.runner.client.callbacks.AsyncCallbackBuilder;
 import org.eclipse.che.ide.ext.runner.client.callbacks.FailureCallback;
 import org.eclipse.che.ide.ext.runner.client.callbacks.SuccessCallback;
@@ -63,37 +63,38 @@ public class CheFluxLiveEditExtension {
 
 
     @Inject
-    public CheFluxLiveEditExtension(EventBus eventBus, final RunnerServiceClient runnerService, final Provider<AsyncCallbackBuilder<Array<ApplicationProcessDescriptor>>> callbackBuilderProvider, final DtoUnmarshallerFactory dtoUnmarshallerFactory) {
+    public CheFluxLiveEditExtension(EventBus eventBus, final RunnerServiceClient runnerService, final Provider<AsyncCallbackBuilder<List<ApplicationProcessDescriptor>>> callbackBuilderProvider, final DtoUnmarshallerFactory dtoUnmarshallerFactory) {
 
-        SocketIOResources ioresources = GWT.create(SocketIOResources.class);
-        ScriptInjector.fromString(ioresources.socketIo().getText()).setWindow(ScriptInjector.TOP_WINDOW).inject();
+        injectSocketIO();
 
         eventBus.addHandler(OpenProjectEvent.TYPE, new OpenProjectHandler() {
             @Override
             public void onOpenProject(OpenProjectEvent event) {
-                runnerService.getRunningProcesses(event.getProjectName(), callbackBuilderProvider
-                                                                                                 .get()
-                                                                                                 .unmarshaller(dtoUnmarshallerFactory.newArrayUnmarshaller(ApplicationProcessDescriptor.class))
-                                                                                                 .success(new SuccessCallback<Array<ApplicationProcessDescriptor>>() {
-                                                                                                     @Override
-                                                                                                     public void onSuccess(Array<ApplicationProcessDescriptor> result) {
-                                                                                                         if (result.isEmpty()) {
-                                                                                                             return;
-                                                                                                         }
-                                                                                                         for (ApplicationProcessDescriptor applicationProcessDescriptor : result.asIterable()) {
-                                                                                                             if (connectIfFluxMicroservice(applicationProcessDescriptor)) {
-                                                                                                                 break;
-                                                                                                             }
-                                                                                                         }
-                                                                                                     }
-                                                                                                 })
-                                                                                                 .failure(new FailureCallback() {
-                                                                                                     @Override
-                                                                                                     public void onFailure(@Nonnull Throwable reason) {
-                                                                                                         Log.error(GetRunningProcessesAction.class, reason);
-                                                                                                     }
-                                                                                                 })
-                                                                                                 .build());
+                runnerService.getRunningProcesses(event.getProjectName(),
+                                                  callbackBuilderProvider
+                                                                         .get()
+                                                                         .unmarshaller(dtoUnmarshallerFactory
+                                                                                                             .newListUnmarshaller(ApplicationProcessDescriptor.class))
+                                                                         .success(new SuccessCallback<List<ApplicationProcessDescriptor>>() {
+                                                                             @Override
+                                                                             public void onSuccess(List<ApplicationProcessDescriptor> result) {
+                                                                                 if (result.isEmpty()) {
+                                                                                     return;
+                                                                                 }
+                                                                                 for (ApplicationProcessDescriptor applicationProcessDescriptor : result) {
+                                                                                     if (connectIfFluxMicroservice(applicationProcessDescriptor)) {
+                                                                                         break;
+                                                                                     }
+                                                                                 }
+                                                                             }
+                                                                         })
+                                                                         .failure(new FailureCallback() {
+                                                                             @Override
+                                                                             public void onFailure(@Nonnull Throwable reason) {
+                                                                                 Log.error(GetRunningProcessesAction.class, reason);
+                                                                             }
+                                                                         })
+                                                                         .build());
             }
         });
 
@@ -141,6 +142,11 @@ public class CheFluxLiveEditExtension {
                                 }
                             });
 
+    }
+
+    private void injectSocketIO() {
+        SocketIOResources ioresources = GWT.create(SocketIOResources.class);
+        ScriptInjector.fromString(ioresources.socketIo().getText()).setWindow(ScriptInjector.TOP_WINDOW).inject();
     }
 
     private boolean connectIfFluxMicroservice(ApplicationProcessDescriptor descriptor) {
