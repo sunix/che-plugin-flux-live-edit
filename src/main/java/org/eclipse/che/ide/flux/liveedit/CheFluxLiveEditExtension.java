@@ -41,6 +41,7 @@ import org.eclipse.che.ide.socketio.SocketIOOverlay;
 import org.eclipse.che.ide.socketio.SocketIOResources;
 import org.eclipse.che.ide.socketio.SocketOverlay;
 import org.eclipse.che.ide.util.loging.Log;
+import org.eclipse.flux.client.FluxMessageBusConnection;
 
 import com.google.gwt.core.client.JsonUtils;
 import com.google.gwt.core.client.ScriptInjector;
@@ -57,10 +58,10 @@ public class CheFluxLiveEditExtension {
 
     private Map<String, Document> liveDocuments   = new HashMap<String, Document>();
 
-    private SocketOverlay         socket;
 
     private boolean               isUpdatingModel = false;
 
+    List<FluxMessageBusConnection> fluxConnections = new ArrayList<FluxMessageBusConnection>();
 
     @Inject
     public CheFluxLiveEditExtension(EventBus eventBus, final RunnerServiceClient runnerService, final Provider<AsyncCallbackBuilder<List<ApplicationProcessDescriptor>>> callbackBuilderProvider, final DtoUnmarshallerFactory dtoUnmarshallerFactory) {
@@ -115,6 +116,8 @@ public class CheFluxLiveEditExtension {
                                     liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
 
                                     final DocumentHandle documentHandle = event.getDocument().getDocumentHandle();
+
+                                    // 5:::{"name":"liveResourceStarted","args":[{"callback_id":0,"username":"USER","project":"aProject","resource":"src/main/java/HelloWorld.java","hash":"83c881f79e740861ddac42f8c599ca9ebd4c54f1","timestamp":1435597346000}]}
 
                                     documentHandle.getDocEventBus().addHandler(DocumentChangeEvent.TYPE, new DocumentChangeHandler() {
                                         @Override
@@ -181,7 +184,9 @@ public class CheFluxLiveEditExtension {
                 String url = "http://" + host + ":" + fluxPort;
                 Log.info(getClass(), "connecting to " + url);
 
-                socket = io.connect(url);
+                final SocketOverlay socket = io.connect(url);
+
+                fluxConnections.add(new SocketIOGwtFluxMessageBusConnection(socket));
 
                 new Timer() {
                     @Override
