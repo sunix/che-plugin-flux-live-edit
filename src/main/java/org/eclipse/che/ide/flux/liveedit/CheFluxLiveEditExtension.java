@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nonnull;
 
 import org.eclipse.che.api.runner.dto.ApplicationProcessDescriptor;
 import org.eclipse.che.api.runner.gwt.client.RunnerServiceClient;
@@ -90,7 +89,7 @@ public class CheFluxLiveEditExtension {
                                                                          })
                                                                          .failure(new FailureCallback() {
                                                                              @Override
-                                                                             public void onFailure(@Nonnull Throwable reason) {
+                                                                             public void onFailure(Throwable reason) {
                                                                                  Log.error(GetRunningProcessesAction.class, reason);
                                                                              }
                                                                          })
@@ -100,7 +99,7 @@ public class CheFluxLiveEditExtension {
 
         eventBus.addHandler(RunnerApplicationStatusEvent.TYPE, new RunnerApplicationStatusEventHandler() {
             @Override
-            public void onRunnerStatusChanged(@Nonnull Runner runner) {
+            public void onRunnerStatusChanged(Runner runner) {
                 ApplicationProcessDescriptor descriptor = runner.getDescriptor();
                 connectIfFluxMicroservice(descriptor);
             }
@@ -153,7 +152,13 @@ public class CheFluxLiveEditExtension {
         if (descriptor == null) {
             return false;
         }
-        String fluxPort = descriptor.getPortMapping().getPorts().get("3000");
+        String fluxPort;
+        try {
+            fluxPort = descriptor.getPortMapping().getPorts().get("3000");
+        } catch (Exception e) {
+            Log.error(getClass(), e);
+            return false;
+        }
         if (fluxPort == null) {
             return false;
         }
