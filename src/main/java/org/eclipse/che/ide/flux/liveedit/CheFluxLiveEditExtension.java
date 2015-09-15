@@ -70,7 +70,11 @@ public class CheFluxLiveEditExtension {
 
         eventBus.addHandler(OpenProjectEvent.TYPE, new OpenProjectHandler() {
             @Override
-            public void onOpenProject(OpenProjectEvent event) {
+            public void onOpenProject(final OpenProjectEvent event) {
+
+                new Timer() {
+                    @Override
+                    public void run() {
                 runnerService.getRunningProcesses(event.getProjectName(), callbackBuilderProvider
                                                                                                  .get()
                                                                                                  .unmarshaller(dtoUnmarshallerFactory.newArrayUnmarshaller(ApplicationProcessDescriptor.class))
@@ -94,6 +98,8 @@ public class CheFluxLiveEditExtension {
                                                                                                      }
                                                                                                  })
                                                                                                  .build());
+
+                    }}.schedule(2000);
             }
         });
 
