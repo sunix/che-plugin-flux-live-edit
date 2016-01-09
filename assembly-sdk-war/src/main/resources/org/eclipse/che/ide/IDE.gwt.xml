@@ -68,6 +68,8 @@
     <inherits name='org.eclipse.che.api.VFS'/>
     <inherits name="org.eclipse.che.api.Workspace"/>
 
+    <inherits name="org.eclipse.che.ide.flux.liveedit.CheFluxLiveEditExtension"/>
+
     <stylesheet src="IDE.css"/>
 
     <!-- Specify the app entry point class.                         -->

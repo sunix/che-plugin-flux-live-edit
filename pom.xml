@@ -40,6 +40,15 @@
     <properties>
         <org.apache.tomcat.version>7.0.50</org.apache.tomcat.version>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.eclipse.che.plugin</groupId>
+                <artifactId>che-plugin-flux-live-edit</artifactId>
+                <version>3.14.1-SNAPSHOT</version>
+           </dependency>
+       </dependencies>
+    </dependencyManagement>
     <repositories>
         <repository>
             <id>codenvy-public-repo</id>
