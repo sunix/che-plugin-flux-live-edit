@@ -1,14 +1,12 @@
-FROM ubuntu:15.10
+#FROM ubuntu:15.10
+FROM ubuntu
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-software-properties \
                                                       software-properties-common \
-                                                      subversion git git-svn tig \
-                                                      screen ack-grep pass bash-completion tofrodos bindfs dnsutils vim \
-                                                      apache2 php5 libapache2-mod-php5 php5-pgsql build-essential \
-                                                      libxml2-dev curl g++ flex bison gperf ruby perl libsqlite3-dev libfontconfig1-dev libicu-dev \
-                                                      libfreetype6 libssl-dev libpng-dev libjpeg-dev fontconfig mysql-client \
-                                                      nodejs nodejs-dbg nodejs-dev nodejs-legacy npm \
+                                                      git tig \
+                                                      screen ack-grep bash-completion bindfs dnsutils vim \
+                                                      apache2 build-essential \
                                                       curl sudo procps wget && \
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     useradd -u 1000 -G users,sudo -d /home/user --shell /bin/bash -m user && \
@@ -23,24 +21,34 @@ RUN \
   echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
   add-apt-repository -y ppa:webupd8team/java && \
   apt-get update && \
-  apt-get install -y oracle-java8-installer maven jmeter && \
+  apt-get install -y oracle-java8-installer && \
   rm -rf /var/lib/apt/lists/* && \
   rm -rf /var/cache/oracle-jdk8-installer
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
 # Install Maven
+ENV MAVEN_VERSION 3.3.9
+
+RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz | tar xzf - -C /usr/share \
+  && mv /usr/share/apache-maven-$MAVEN_VERSION /usr/share/maven \
+  && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+
+ENV MAVEN_HOME /usr/share/maven
 
 USER user
 WORKDIR /home/user
-RUN git clone https://github.com/sunix/che-plugin-flux-live-edit.git && \
+RUN mkdir /home/user/.che && \
+    git clone https://github.com/sunix/che-plugin-flux-live-edit.git && \
     cd che-plugin-flux-live-edit && \
     mvn clean install -Dmaven.test.skip=true && \
     git checkout 3.x && \
     mvn clean install -Dmaven.test.skip=true
 
-EXPOSE 8080 32768-65535
-
+ADD che.properties /home/user/che-plugin-flux-live-edit/assembly-sdk/target/assembly-sdk-3.14.1-SNAPSHOT/assembly-sdk-3.14.1-SNAPSHOT/conf/che.properties
+EXPOSE 8080 49152-49162
+#ENV CODENVY_LOCAL_CONF_DIR /home/user/.che/
 
 CMD  sudo service docker start && \
+    # cd /home/user/che-plugin-flux-live-edit/assembly-sdk/target/assembly-sdk-3.14.1-SNAPSHOT/assembly-sdk-3.14.1-SNAPSHOT/bin/ && \
      cd /home/user/che-plugin-flux-live-edit && \
      ./che.sh run
