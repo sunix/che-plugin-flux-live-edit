@@ -16,9 +16,10 @@
     <parent>
         <artifactId>che-plugin-parent</artifactId>
         <groupId>org.eclipse.che.plugin</groupId>
-        <version>3.14.1-SNAPSHOT</version>
+        <version>3.14.0</version>
     </parent>
     <artifactId>che-plugin-flux-live-edit</artifactId>
+    <version>3.14.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Che :: Flux live edit plugin</name>
     <dependencies>
