@@ -1,5 +1,5 @@
-#FROM ubuntu:15.10
-FROM ubuntu
+FROM ubuntu:15.10
+#FROM ubuntu
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-software-properties \
@@ -23,7 +23,8 @@ RUN \
   apt-get update && \
   apt-get install -y oracle-java8-installer && \
   rm -rf /var/lib/apt/lists/* && \
-  rm -rf /var/cache/oracle-jdk8-installer
+  rm -rf /var/cache/oracle-jdk8-installer && \
+  sudo apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
 # Install Maven
@@ -42,13 +43,13 @@ RUN mkdir /home/user/.che && \
     cd che-plugin-flux-live-edit && \
     mvn clean install -Dmaven.test.skip=true && \
     git checkout 3.x && \
-    mvn clean install -Dmaven.test.skip=true
+    mvn clean install -Dmaven.test.skip=true && \
+    rm -rf /home/user/.m2/
 
-ADD che.properties /home/user/che-plugin-flux-live-edit/assembly-sdk/target/assembly-sdk-3.14.1-SNAPSHOT/assembly-sdk-3.14.1-SNAPSHOT/conf/che.properties
+ADD che.properties /home/user/.che/che.properties
+ENV CHE_LOCAL_CONF_DIR /home/user/.che/
 EXPOSE 8080 49152-49162
-#ENV CODENVY_LOCAL_CONF_DIR /home/user/.che/
 
 CMD  sudo service docker start && \
-    # cd /home/user/che-plugin-flux-live-edit/assembly-sdk/target/assembly-sdk-3.14.1-SNAPSHOT/assembly-sdk-3.14.1-SNAPSHOT/bin/ && \
      cd /home/user/che-plugin-flux-live-edit && \
      ./che.sh run
