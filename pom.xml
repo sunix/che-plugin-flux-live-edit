@@ -1,98 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-
-    Copyright (c) 2015 Serli SAS.
-    All rights reserved. This program and the accompanying materials
-    are made available under the terms of the Eclipse Public License v1.0
-    which accompanies this distribution, and is available at
-    http://www.eclipse.org/legal/epl-v10.html
-
-    Contributors:
-      Sun Seng David TAN <sunix@sunix.org> - initial API and implementation
-
+<!--                                                                                                                                                             
+                                                                                                                                                                 
+    Copyright (c) 2015 Serli SAS.                                                                                                                                
+    All rights reserved. This program and the accompanying materials                                                                                             
+    are made available under the terms of the Eclipse Public License v1.0                                                                                        
+    which accompanies this distribution, and is available at                                                                                                     
+    http://www.eclipse.org/legal/epl-v10.html                                                                                                                    
+                                                                                                                                                                 
+    Contributors:                                                                                                                                                
+      Sun Seng David TAN <sunix@sunix.org> - initial API and implementation                                                                                      
+                                                                                                                                                                 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>che-plugin-parent</artifactId>
-        <groupId>org.eclipse.che.plugin</groupId>
-        <version>3.14.0</version>
-    </parent>
-    <artifactId>che-plugin-flux-live-edit</artifactId>
-    <version>3.14.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <name>Che :: Flux live edit plugin</name>
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-ide-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-ide-jseditor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.che.plugin</groupId>
-            <artifactId>che-plugin-runner-ext-runner</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-commons-gwt</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-api-runner</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-client-gwt-runner</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.gwt</groupId>
-            <artifactId>gwt-user</artifactId>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
-    <repositories>
-        <repository>
-            <id>codenvy-public-repo</id>
-            <name>codenvy public</name>
-            <url>https://maven.codenvycorp.com/content/groups/public/</url>
-        </repository>
-    </repositories>
-    <build>
-        <sourceDirectory>src/main/java</sourceDirectory>
-        <outputDirectory>target/classes</outputDirectory>
-        <resources>
-            <resource>
-                <directory>src/main/java</directory>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/org/eclipse/che/ide/**</exclude>
-                        <exclude>pom.xml</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.google.code.sortpom</groupId>
-                <artifactId>maven-sortpom-plugin</artifactId>
-                <configuration>
-                    <verifyFail>Warn</verifyFail>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 ht tp://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.che</groupId>
+    <artifactId>che-parent</artifactId>
+    <version>4.0.0-RC7</version>
+  </parent>
+  <groupId>org.eclipse.che.plugin</groupId>
+  <artifactId>che-plugin-flux-live-edit</artifactId>
+  <version>4.0.0-RC8-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>Che :: Flux live edit plugin</name>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.che.core</groupId>
+      <artifactId>che-core-ide-jseditor</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.che.core</groupId>
+      <artifactId>che-core-api-machine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.che.core</groupId>
+      <artifactId>che-core-client-gwt-machine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.che.core</groupId>
+      <artifactId>che-core-ide-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-user</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.che.core</groupId>
+      <artifactId>che-core-commons-gwt</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.che.plugin</groupId>
+      <artifactId>che-plugin-machine-ext-client</artifactId>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>codenvy-public-repo</id>
+      <name>codenvy public</name>
+      <url>https://maven.codenvycorp.com/content/groups/public/</url>
+    </repository>
+  </repositories>
+  <build>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <outputDirectory>target/classes</outputDirectory>
+    <resources>
+      <resource>
+        <directory>src/main/java</directory>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/org/eclipse/che/ide/**</exclude>
+            <exclude>pom.xml</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.google.code.sortpom</groupId>
+        <artifactId>maven-sortpom-plugin</artifactId>
+        <configuration>
+          <verifyFail>Warn</verifyFail>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
