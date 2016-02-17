@@ -1,15 +1,32 @@
-# Live editing and pair programing with Eclipse Cloud Development top projects
+# Pair programming with Eclipse Cloud Development top projects
+This is the prototype of the Pair programming Eclipse Che plugin.
 
-Demo for the talk: [Live editing and pair programing with Eclipse Cloud Development top projects](https://www.eclipsecon.org/france2015/session/live-editing-and-pair-programing-eclipse-cloud-development-top-projects)
+## Resources
 
-The prototype
-- Demonstrate that it will be possible to set up real time collaborative editing for our IDEs easyly
+Video of the demos can be found
 
-The session
-- Deep dive on each component of the demo, how it is done, technology used
+  - Jug Summer Camp 2015
+  - Eclipse Con Europe 2015
+  
 
-For the next session
-- an overview of what is missing to make it ready to use
+Last slides done at Snowcamp 2015: 
+
+## How to run the demo with Eclipse Che 3.x:
+
+I've made available a Docker container with Eclipse Che and the Eclipse Flux plugin.
+
+### Run che with docker:
+
+    docker run ......
+
+You may need to update the .che/che.properties, and replace `localhost` by the IP or domain name of your instance.
+
+### Add a new Dockerfile
+
+
+### Create a new project in Che
+
+
 
 
 
