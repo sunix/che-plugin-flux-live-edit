@@ -16,7 +16,11 @@ public class SocketIOOverlay extends JavaScriptObject {
 
     protected SocketIOOverlay() {}
     public final native SocketOverlay connect(String url) /*-{
-        return this.connect(url);
+        return this.connect(url, {
+                   'reconnect': true,
+                   'reconnection delay': 500,
+                   'max reconnection attempts': 10
+        });
     }-*/;
 
 }

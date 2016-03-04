@@ -17,6 +17,10 @@ public class SocketOverlay extends JavaScriptObject {
     protected SocketOverlay() {
     }
 
+    public final native void reconnect() /*-{
+        this.socket.reconnect();
+    }-*/;
+
     public final native void emit(String type, JavaScriptObject json) /*-{
       this.emit(type, json, function(answer) {
             });
