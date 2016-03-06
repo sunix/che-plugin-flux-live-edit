@@ -25,12 +25,14 @@ RUN mkdir /home/user/.che && \
    --no-check-certificate \
    --header "Cookie: oraclelicense=accept-securebackup-cookie" \
    -qO- \
-   "http://download.oracle.com/otn-pub/java/jdk/$JAVA_VERSION-b17/jre-$JAVA_VERSION-linux-x64.tar.gz" | sudo tar -zx -C /opt/
-ENV JAVA_HOME /opt/jre$JAVA_VERSION_PREFIX
+   "http://download.oracle.com/otn-pub/java/jdk/$JAVA_VERSION-b14/jdk-$JAVA_VERSION-linux-x64.tar.gz" | sudo tar -zx -C /opt/
+ENV JAVA_HOME /opt/jdk$JAVA_VERSION_PREFIX
 ENV PATH $JAVA_HOME/bin:$PATH
+
 
 EXPOSE 8080
 
+WORKDIR /home/user
 RUN git clone https://github.com/sunix/che-plugin-flux-live-edit.git && \
     cd che-plugin-flux-live-edit && \
     mvn clean install -Dmaven.test.skip -Dfindbugs.skip && \

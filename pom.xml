@@ -20,25 +20,30 @@
   </parent>
   <groupId>org.eclipse.che.plugin</groupId>
   <artifactId>che-plugin-flux-live-edit</artifactId>
-  <version>4.0.0-RC8-SNAPSHOT</version>
+  <version>4.0.0-RC7</version>
   <packaging>jar</packaging>
   <name>Che :: Flux live edit plugin</name>
+  <properties><che.version>4.0.0-RC7</che.version></properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.che.core</groupId>
       <artifactId>che-core-ide-jseditor</artifactId>
+    <version>${che.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.che.core</groupId>
       <artifactId>che-core-api-machine</artifactId>
+    <version>${che.version}</version>
     </dependency>
-    <dependency>                                                                                                                                                                      
-      <groupId>org.eclipse.che.core</groupId>                                                                                                                                            
-      <artifactId>che-core-ide-app</artifactId>                                                                                                                                          
+    <dependency>
+      <groupId>org.eclipse.che.core</groupId>                                                                                    
+      <artifactId>che-core-ide-app</artifactId>                                                                                                                        
+    <version>${che.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.che.core</groupId>
       <artifactId>che-core-client-gwt-machine</artifactId>
+    <version>${che.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.inject</groupId>
@@ -47,6 +52,7 @@
     <dependency>
       <groupId>org.eclipse.che.core</groupId>
       <artifactId>che-core-ide-api</artifactId>
+    <version>${che.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.gwt</groupId>
@@ -56,10 +62,12 @@
     <dependency>
       <groupId>org.eclipse.che.core</groupId>
       <artifactId>che-core-commons-gwt</artifactId>
+    <version>${che.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.che.plugin</groupId>
       <artifactId>che-plugin-machine-ext-client</artifactId>
+    <version>${che.version}</version>
     </dependency>
 <dependency>
 	<groupId>junit</groupId>
