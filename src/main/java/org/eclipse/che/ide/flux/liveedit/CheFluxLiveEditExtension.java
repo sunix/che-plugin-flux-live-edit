@@ -99,9 +99,7 @@ public class CheFluxLiveEditExtension {
                         if (descriptors.isEmpty()) {
                             return;
                         }
-                        Log.info(getClass(), "machine processes");
                         for (MachineProcessDto machineProcessDto : descriptors) {
-                            Log.info(getClass(), " - " + machineProcessDto);
                             if (connectIfFluxMicroservice(machineProcessDto)) {
                                 break;
                             }
