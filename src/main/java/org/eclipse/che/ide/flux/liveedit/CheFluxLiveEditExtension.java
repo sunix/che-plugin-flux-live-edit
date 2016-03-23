@@ -33,6 +33,7 @@ import org.eclipse.che.ide.jseditor.client.events.DocumentChangeEvent;
 import org.eclipse.che.ide.jseditor.client.events.DocumentChangeHandler;
 import org.eclipse.che.ide.jseditor.client.events.DocumentReadyEvent;
 import org.eclipse.che.ide.jseditor.client.events.DocumentReadyHandler;
+import org.eclipse.che.ide.jseditor.client.text.TextPosition;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
 import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.socketio.Consumer;
@@ -243,9 +244,9 @@ public class CheFluxLiveEditExtension {
                 }
                 String addedCharacters = event.getAddedCharacters();
                 isUpdatingModel = true;
+                TextPosition cursorPosition = document.getCursorPosition();
                 document.replace(event.getOffset(), event.getRemovedCharCount(), addedCharacters);
-                //    public void replace(int offset, int length, String text) {
-                //   this.editorOverlay.setText(text, offset, offset + length);
+                document.setCursorPosition(cursorPosition);
                 isUpdatingModel = false;
             }
         });
