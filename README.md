@@ -32,6 +32,32 @@ Should be with uid 1000 and be in the docker group. `docker ps` should work.
  
 ### Run
 
-TODO
+    ./eclipse-che-4.0.0-RC14-SNAPSHOT/bin/che.sh -r:ip run
+
+Access to Che through with your browser http://ip:8080
+
+
+### Demo
+
+To make the demo up and running:
+
+1. Create a workspace from a custom stack. Provide the following Dockerfile to your stack:
+
+        FROM sunix/chefluxworkspace
+
+2. Start the workspace, Open in IDE
+3. Import the helloworld  project from Github  (can actually be any project):
+
+        https://github.com/sunix/helloworld
+
+4. Create a custom command
+
+  - name: `flux`
+  - commandline: `sudo service rabbitmq-server start && cd /home/user/flux-master/node.server && npm start`
+
+5. Start the flux command
+6. Open a file to edit
+7. Open a new browser windows to the same workspace, open the same file to edit
+8. And it should work. If not, try to refresh both browser windows.
 
 
