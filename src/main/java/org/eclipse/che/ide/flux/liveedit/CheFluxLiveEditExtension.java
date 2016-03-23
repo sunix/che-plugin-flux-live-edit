@@ -206,7 +206,7 @@ public class CheFluxLiveEditExtension {
             return false;
         }
         if ("flux".equals(descriptor.getName())) {
-            String urlToSubstitute = "http://${server.port.3000}";
+            String urlToSubstitute = "http://${server.port.3000/tcp}";
             if (commandPropertyValueProviderRegistry == null) {
                 return false;
             }
