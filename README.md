@@ -1,33 +1,37 @@
 # Pair programming with Eclipse Cloud Development top projects
-This is the prototype of the Pair programming Eclipse Che plugin.
+This is the prototype of the Pair programming plugin for Eclipse Che.
 
 ## Resources
 
 Video of the demos can be found
 
-  - Jug Summer Camp 2015
-  - Eclipse Con Europe 2015
-  
+  - [Jug Summer Camp 2015](https://www.youtube.com/watch?v=-FXmt4cfpRo)
+  - [Eclipse Con Europe 2015](https://www.youtube.com/watch?v=lX-4ftWzK3s)
 
-Last slides done at Snowcamp 2015: 
+Last slides done at Eclipse Con NA 2016: [Slides](https://docs.google.com/presentation/d/1Emhsy9erAd5PVkAwFk7S36aC9M_Yn4pIS0z5GDYFb_8/pub?start=false&loop=false&delayms=3000&slide=id.g10d592b969_1_123)
 
-## How to run the demo with Eclipse Che 3.x:
+## How to run the demo:
 
-I've made available a Docker container with Eclipse Che and the Eclipse Flux plugin.
+### Requirements
 
-### Run che with docker:
-
-    docker run ......
-
-You may need to update the .che/che.properties, and replace `localhost` by the IP or domain name of your instance.
-
-### Add a new Dockerfile
+Docker 1.10 + Java JDK 1.8
 
 
-### Create a new project in Che
+### User
 
+Should be with uid 1000 and be in the docker group. `docker ps` should work.
 
+### Build
 
+    git clone https://github.com/sunix/che-plugin-flux-live-edit.git && \
+    cd che-plugin-flux-live-edit && \
+    mvn clean install -Dmaven.test.skip -Dfindbugs.skip && \
+    git checkout assembly4flux && \
+    mvn clean install -Dmaven.test.skip -Dfindbugs.skip -f assembly/pom.xml && \
+    cp -rf assembly/assembly-main/target/eclipse-che-*/eclipse-che-* .
+ 
+### Run
 
+TODO
 
 
