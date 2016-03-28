@@ -32,7 +32,7 @@ Should be with uid 1000 and be in the docker group. `docker ps` should work.
  
 ### Run
 
-    ./eclipse-che-4.0.0-RC14-SNAPSHOT/bin/che.sh -r:ip run
+    ./eclipse-che-4.0.0-SNAPSHOT/bin/che.sh -r:ip run
 
 Access to Che through with your browser http://ip:8080
 
