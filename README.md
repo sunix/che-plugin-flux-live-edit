@@ -22,17 +22,28 @@ Docker 1.10 + Java JDK 1.8
 Should be with uid 1000 and be in the docker group. `docker ps` should work.
 
 ### Build
+#### Build the plugin
 
+    cd /path/to/your/workspace && \
     git clone https://github.com/sunix/che-plugin-flux-live-edit.git && \
     cd che-plugin-flux-live-edit && \
-    mvn clean install -Dmaven.test.skip -Dfindbugs.skip && \
+    mvn clean install -Dmaven.test.skip -Dfindbugs.skip
+
+#### Build Che with the plugin (using a fork of che)
+
+    cd /path/to/your/workspace && \
+    git clone https://github.com/sunix/che-plugin-flux-live-edit.git che-flux && \
+    cd che-flux && \
     git checkout assembly4flux && \
+    mvn clean install -Dmaven.test.skip -Dfindbugs.skip -N && \
     mvn clean install -Dmaven.test.skip -Dfindbugs.skip -f assembly/pom.xml && \
     cp -rf assembly/assembly-main/target/eclipse-che-*/eclipse-che-* .
  
 ### Run
+`-r:ip` is optional, replace the ip with your external ip
 
-    ./eclipse-che-4.0.0-SNAPSHOT/bin/che.sh -r:ip run
+    ./eclipse-che-4.2.1/bin/che.sh -r:ip run
+
 
 Access to Che through with your browser http://ip:8080
 
