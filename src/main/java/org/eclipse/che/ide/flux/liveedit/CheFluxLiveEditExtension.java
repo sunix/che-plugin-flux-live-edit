@@ -114,7 +114,7 @@ public class CheFluxLiveEditExtension {
         eventBus.addHandler(ProjectExplorerLoadedEvent.getType(), new ProjectExplorerLoadedEvent.ProjectExplorerLoadedHandler() {
             @Override
             public void onProjectsLoaded(ProjectExplorerLoadedEvent event) {
-                String machineId = appContext.getDevMachineId();
+                String machineId = appContext.getDevMachine().getId();
                 Promise<List<MachineProcessDto>> processesPromise = machineServiceClient.getProcesses(machineId);
                 processesPromise.then(new Operation<List<MachineProcessDto>>() {
                     @Override
@@ -212,7 +212,7 @@ public class CheFluxLiveEditExtension {
                                                       }-*/;
 
     private void connectToFluxOnFluxProcessStarted() {
-        String machineId = appContext.getDevMachineId();
+        String machineId = appContext.getDevMachine().getId();
         final Unmarshallable<MachineProcessEvent> unmarshaller = dtoUnmarshallerFactory.newWSUnmarshaller(MachineProcessEvent.class);
         final String processStateChannel = "machine:process:" + machineId;
         final MessageHandler handler = new SubscriptionHandler<MachineProcessEvent>(unmarshaller) {
@@ -220,7 +220,7 @@ public class CheFluxLiveEditExtension {
             protected void onMessageReceived(MachineProcessEvent result) {
                 if (MachineProcessEvent.EventType.STARTED.equals(result.getEventType())) {
                     final int processId = result.getProcessId();
-                    machineServiceClient.getProcesses(appContext.getDevMachineId()).then(new Operation<List<MachineProcessDto>>() {
+                    machineServiceClient.getProcesses(appContext.getDevMachine().getId()).then(new Operation<List<MachineProcessDto>>() {
                         @Override
                         public void apply(List<MachineProcessDto> descriptors) throws OperationException {
                             if (descriptors.isEmpty()) {
