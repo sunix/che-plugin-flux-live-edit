@@ -37,6 +37,7 @@ import org.eclipse.che.ide.jseditor.client.text.TextPosition;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
 import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.socketio.Consumer;
+import org.eclipse.che.ide.socketio.Message;
 import org.eclipse.che.ide.socketio.SocketIOOverlay;
 import org.eclipse.che.ide.socketio.SocketIOResources;
 import org.eclipse.che.ide.socketio.SocketOverlay;
@@ -268,34 +269,31 @@ public class CheFluxLiveEditExtension {
             public void onDocumentReady(DocumentReadyEvent event) {
                 liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
 
-                final DocumentHandle documentHandle = event.getDocument().getDocumentHandle();
+
+                Document document = event.getDocument();
+                final DocumentHandle documentHandle = document.getDocumentHandle();
+
+                Message message = new FluxMessageBuilder().with(document) //
+                                                          .buildResourceRequestMessage();
+                socket.emit(message);
 
                 documentHandle.getDocEventBus().addHandler(DocumentChangeEvent.TYPE, new DocumentChangeHandler() {
                     @Override
                     public void onDocumentChange(DocumentChangeEvent event) {
                         if (socket != null) {
                             // full path start with /, so substring
-                            String fullPath = event.getDocument().getDocument().getFile().getPath().substring(1);
-                            String project = fullPath.substring(0, fullPath.indexOf('/'));
-                            String resource = fullPath.substring(fullPath.indexOf('/') + 1);
-                            String text = JsonUtils.escapeValue(event.getText());
-                            String json = "{"//
-                                          + "\"username\":\"USER\","//
-                                          + "\"project\":\"" + project + "\","//
-                                          + "\"resource\":\"" + resource + "\"," //
-                                          + "\"offset\":" + event.getOffset() + "," //
-                                          + "\"removedCharCount\":" + event.getRemoveCharCount() + "," //
-                                          + "\"addedCharacters\": " + text //
-                                          + "}";
+                            Message liveResourceChangeMessage = new FluxMessageBuilder().with(event)//
+                                                                                        .buildLiveResourceChangeMessage();
+
                             if (isUpdatingModel) {
                                 return;
                             }
-                            socket.emit("liveResourceChanged", JsonUtils.unsafeEval(json));
+                            socket.emit(liveResourceChangeMessage);
+
                         }
                     }
                 });
             }
         });
     }
-
 }
