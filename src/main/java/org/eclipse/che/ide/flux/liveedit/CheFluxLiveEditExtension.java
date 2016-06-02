@@ -15,18 +15,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.che.ide.api.machine.MachineManager;
-import org.eclipse.che.ide.api.machine.MachineServiceClient;
 import org.eclipse.che.api.machine.shared.dto.MachineProcessDto;
 import org.eclipse.che.api.machine.shared.dto.event.MachineProcessEvent;
 import org.eclipse.che.api.promises.client.Operation;
 import org.eclipse.che.api.promises.client.OperationException;
 import org.eclipse.che.api.promises.client.Promise;
 import org.eclipse.che.ide.api.app.AppContext;
-import org.eclipse.che.ide.api.extension.Extension;
-import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
-import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProvider;
-import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
 import org.eclipse.che.ide.api.editor.document.Document;
 import org.eclipse.che.ide.api.editor.document.DocumentHandle;
 import org.eclipse.che.ide.api.editor.events.DocumentChangeEvent;
@@ -34,6 +28,11 @@ import org.eclipse.che.ide.api.editor.events.DocumentChangeHandler;
 import org.eclipse.che.ide.api.editor.events.DocumentReadyEvent;
 import org.eclipse.che.ide.api.editor.events.DocumentReadyHandler;
 import org.eclipse.che.ide.api.editor.text.TextPosition;
+import org.eclipse.che.ide.api.extension.Extension;
+import org.eclipse.che.ide.api.machine.MachineManager;
+import org.eclipse.che.ide.api.machine.MachineServiceClient;
+import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
+import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
 import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.socketio.Consumer;
@@ -153,13 +152,12 @@ public class CheFluxLiveEditExtension {
 
     public void substituteAndConnect(final String commandLine) {
         try {
-            String cmdLine = commandLine;
-            List<CommandPropertyValueProvider> providers = commandPropertyValueProviderRegistry.getProviders();
-            for (CommandPropertyValueProvider provider : providers) {
-                cmdLine = cmdLine.replace(provider.getKey(), (CharSequence) provider.getValue());
-            }
-            connectToFlux(cmdLine);
-            return;
+            commandManager.substituteProperties(commandLine).then(new Operation<String>() {
+                @Override
+                public void apply(String cmdLine) throws OperationException {
+                    connectToFlux(cmdLine);
+                }
+            });
         } catch (Exception e) {
             if (trySubstitude > 0) {
                 new Timer() {
