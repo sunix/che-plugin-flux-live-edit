@@ -10,8 +10,8 @@
  *******************************************************************************/
 package org.eclipse.che.ide.flux.liveedit;
 
-import org.eclipse.che.ide.jseditor.client.document.Document;
-import org.eclipse.che.ide.jseditor.client.events.DocumentChangeEvent;
+import org.eclipse.che.ide.api.editor.document.Document;
+import org.eclipse.che.ide.api.editor.events.DocumentChangeEvent;
 import org.eclipse.che.ide.socketio.Message;
 
 import com.google.gwt.core.client.JsonUtils;
