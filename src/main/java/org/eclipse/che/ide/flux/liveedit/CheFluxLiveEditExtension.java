@@ -15,8 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.che.api.machine.gwt.client.MachineManager;
-import org.eclipse.che.api.machine.gwt.client.MachineServiceClient;
+import org.eclipse.che.ide.api.machine.MachineManager;
+import org.eclipse.che.ide.api.machine.MachineServiceClient;
 import org.eclipse.che.api.machine.shared.dto.MachineProcessDto;
 import org.eclipse.che.api.machine.shared.dto.event.MachineProcessEvent;
 import org.eclipse.che.api.promises.client.Operation;
@@ -27,13 +27,13 @@ import org.eclipse.che.ide.api.extension.Extension;
 import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProvider;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
-import org.eclipse.che.ide.jseditor.client.document.Document;
-import org.eclipse.che.ide.jseditor.client.document.DocumentHandle;
-import org.eclipse.che.ide.jseditor.client.events.DocumentChangeEvent;
-import org.eclipse.che.ide.jseditor.client.events.DocumentChangeHandler;
-import org.eclipse.che.ide.jseditor.client.events.DocumentReadyEvent;
-import org.eclipse.che.ide.jseditor.client.events.DocumentReadyHandler;
-import org.eclipse.che.ide.jseditor.client.text.TextPosition;
+import org.eclipse.che.ide.api.editor.document.Document;
+import org.eclipse.che.ide.api.editor.document.DocumentHandle;
+import org.eclipse.che.ide.api.editor.events.DocumentChangeEvent;
+import org.eclipse.che.ide.api.editor.events.DocumentChangeHandler;
+import org.eclipse.che.ide.api.editor.events.DocumentReadyEvent;
+import org.eclipse.che.ide.api.editor.events.DocumentReadyHandler;
+import org.eclipse.che.ide.api.editor.text.TextPosition;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
 import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.socketio.Consumer;
@@ -156,7 +156,7 @@ public class CheFluxLiveEditExtension {
             String cmdLine = commandLine;
             List<CommandPropertyValueProvider> providers = commandPropertyValueProviderRegistry.getProviders();
             for (CommandPropertyValueProvider provider : providers) {
-                cmdLine = cmdLine.replace(provider.getKey(), provider.getValue());
+                cmdLine = cmdLine.replace(provider.getKey(), (CharSequence) provider.getValue());
             }
             connectToFlux(cmdLine);
             return;
