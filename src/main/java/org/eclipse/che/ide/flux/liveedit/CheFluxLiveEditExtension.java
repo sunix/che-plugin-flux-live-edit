@@ -11,16 +11,20 @@
 package org.eclipse.che.ide.flux.liveedit;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gwt.user.client.rpc.core.java.util.ArrayList_CustomFieldSerializer;
 import org.eclipse.che.api.machine.shared.dto.MachineProcessDto;
 import org.eclipse.che.api.machine.shared.dto.event.MachineProcessEvent;
 import org.eclipse.che.api.promises.client.Operation;
 import org.eclipse.che.api.promises.client.OperationException;
 import org.eclipse.che.api.promises.client.Promise;
 import org.eclipse.che.ide.api.app.AppContext;
+import org.eclipse.che.ide.api.editor.EditorAgent;
+import org.eclipse.che.ide.api.editor.EditorPartPresenter;
 import org.eclipse.che.ide.api.editor.document.Document;
 import org.eclipse.che.ide.api.editor.document.DocumentHandle;
 import org.eclipse.che.ide.api.editor.events.DocumentChangeEvent;
@@ -28,6 +32,9 @@ import org.eclipse.che.ide.api.editor.events.DocumentChangeHandler;
 import org.eclipse.che.ide.api.editor.events.DocumentReadyEvent;
 import org.eclipse.che.ide.api.editor.events.DocumentReadyHandler;
 import org.eclipse.che.ide.api.editor.text.TextPosition;
+import org.eclipse.che.ide.api.editor.text.TextRange;
+import org.eclipse.che.ide.api.editor.texteditor.HasTextMarkers;
+import org.eclipse.che.ide.api.editor.texteditor.TextEditorPresenter;
 import org.eclipse.che.ide.api.extension.Extension;
 import org.eclipse.che.ide.api.machine.MachineManager;
 import org.eclipse.che.ide.api.machine.MachineServiceClient;
@@ -40,6 +47,7 @@ import org.eclipse.che.ide.socketio.Message;
 import org.eclipse.che.ide.socketio.SocketIOOverlay;
 import org.eclipse.che.ide.socketio.SocketIOResources;
 import org.eclipse.che.ide.socketio.SocketOverlay;
+import org.eclipse.che.ide.ui.listbox.CustomListBoxResources;
 import org.eclipse.che.ide.util.loging.Log;
 import org.eclipse.che.ide.websocket.MessageBus;
 import org.eclipse.che.ide.websocket.MessageBusProvider;
@@ -54,6 +62,9 @@ import com.google.gwt.core.shared.GWT;
 import com.google.gwt.user.client.Timer;
 import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;
+
+import org.eclipse.che.ide.resource.Path;
+
 
 @Extension(title = "Che Flux extension", version = "1.0.0")
 public class CheFluxLiveEditExtension {
@@ -78,6 +89,13 @@ public class CheFluxLiveEditExtension {
 
     private DtoUnmarshallerFactory               dtoUnmarshallerFactory;
 
+    private EditorAgent editorAgent;
+    private EditorPartPresenter activeEditor;
+    private TextEditorPresenter textEditor;
+    private EditorPartPresenter openedEditor;
+    private HasTextMarkers.MarkerRegistration markerRegistration;
+    private Path path;
+
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
                                     final EventBus eventBus,
@@ -86,7 +104,7 @@ public class CheFluxLiveEditExtension {
                                     final DtoUnmarshallerFactory dtoUnmarshallerFactory,
                                     final AppContext appContext,
                                     final CommandManager commandManager,
-                                    final CommandPropertyValueProviderRegistry commandPropertyValueProviderRegistry) {
+                                    final CommandPropertyValueProviderRegistry commandPropertyValueProviderRegistry, EditorAgent editorAgent) {
         this.dtoUnmarshallerFactory = dtoUnmarshallerFactory;
         this.commandManager = commandManager;
         this.messageBus = messageBusProvider.getMessageBus();
@@ -94,6 +112,7 @@ public class CheFluxLiveEditExtension {
         this.eventBus = eventBus;
         this.appContext = appContext;
         this.machineServiceClient = machineServiceClient;
+        this.editorAgent = editorAgent;
 
         injectSocketIO();
 
@@ -262,6 +281,7 @@ public class CheFluxLiveEditExtension {
     }
 
     private void sendFluxMessageOnDocumentModelChanged() {
+        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
         eventBus.addHandler(DocumentReadyEvent.TYPE, new DocumentReadyHandler() {
             @Override
             public void onDocumentReady(DocumentReadyEvent event) {
@@ -274,15 +294,33 @@ public class CheFluxLiveEditExtension {
                 Message message = new FluxMessageBuilder().with(document) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
-
                 documentHandle.getDocEventBus().addHandler(DocumentChangeEvent.TYPE, new DocumentChangeHandler() {
                     @Override
                     public void onDocumentChange(DocumentChangeEvent event) {
+
+                        if (markerRegistration!= null){
+                            markerRegistration.clearMark();
+                        }
                         if (socket != null) {
+                            path = new Path(event.getDocument().getDocument().getFile().getPath());
+                            openedEditor = editorAgent.getOpenedEditor(path);
+                            if (openedEditor instanceof TextEditorPresenter){
+                                textEditor  = (TextEditorPresenter)openedEditor;
+                            }
+
+                            int pos = event.getOffset();
+                            if (event.getRemoveCharCount()==0){
+                                pos++;
+                            }
+                            final TextPosition from = textEditor.getDocument().getPositionFromIndex(pos);
+                            final TextPosition to = textEditor.getDocument().getPositionFromIndex(pos);
+
+                            final TextRange textRange = new TextRange(from, to);
+                            String annotationStyle = RESOURCES.getCSS().pairProgramminig();
+                            markerRegistration = textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle);
                             // full path start with /, so substring
                             Message liveResourceChangeMessage = new FluxMessageBuilder().with(event)//
                                                                                         .buildLiveResourceChangeMessage();
-
                             if (isUpdatingModel) {
                                 return;
                             }
