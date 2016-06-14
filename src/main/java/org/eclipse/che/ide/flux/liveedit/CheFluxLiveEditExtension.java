@@ -33,6 +33,7 @@ import org.eclipse.che.ide.api.editor.events.DocumentReadyEvent;
 import org.eclipse.che.ide.api.editor.events.DocumentReadyHandler;
 import org.eclipse.che.ide.api.editor.text.TextPosition;
 import org.eclipse.che.ide.api.editor.text.TextRange;
+import org.eclipse.che.ide.api.editor.texteditor.CursorModelWithHandler;
 import org.eclipse.che.ide.api.editor.texteditor.HasTextMarkers;
 import org.eclipse.che.ide.api.editor.texteditor.TextEditorPresenter;
 import org.eclipse.che.ide.api.extension.Extension;
@@ -95,6 +96,7 @@ public class CheFluxLiveEditExtension {
     private EditorPartPresenter openedEditor;
     private HasTextMarkers.MarkerRegistration markerRegistration;
     private Path path;
+    private CursorModelWithHandler cursorModel;
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
@@ -281,6 +283,8 @@ public class CheFluxLiveEditExtension {
     }
 
     private void sendFluxMessageOnDocumentModelChanged() {
+
+
         final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
         eventBus.addHandler(DocumentReadyEvent.TYPE, new DocumentReadyHandler() {
             @Override
@@ -291,6 +295,7 @@ public class CheFluxLiveEditExtension {
                 Document document = event.getDocument();
                 final DocumentHandle documentHandle = document.getDocumentHandle();
 
+                cursorModel = new TextEditorCursorModel(document);
                 Message message = new FluxMessageBuilder().with(document) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
