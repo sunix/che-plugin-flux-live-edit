@@ -284,7 +284,7 @@ public class CheFluxLiveEditExtension {
 
     private void sendFluxMessageOnDocumentModelChanged() {
 
-
+        final CursorHandlerForPairProgramming cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
         final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
         eventBus.addHandler(DocumentReadyEvent.TYPE, new DocumentReadyHandler() {
             @Override
@@ -295,7 +295,7 @@ public class CheFluxLiveEditExtension {
                 Document document = event.getDocument();
                 final DocumentHandle documentHandle = document.getDocumentHandle();
 
-                cursorModel = new TextEditorCursorModel(document);
+                cursorModel = new TextEditorCursorModel(document,cursorHandlerForPairProgramming ,editorAgent);
                 Message message = new FluxMessageBuilder().with(document) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
@@ -303,8 +303,8 @@ public class CheFluxLiveEditExtension {
                     @Override
                     public void onDocumentChange(DocumentChangeEvent event) {
 
-                        if (markerRegistration!= null){
-                            markerRegistration.clearMark();
+                        if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
+                            cursorHandlerForPairProgramming.clearMark();
                         }
                         if (socket != null) {
                             path = new Path(event.getDocument().getDocument().getFile().getPath());
@@ -322,7 +322,8 @@ public class CheFluxLiveEditExtension {
 
                             final TextRange textRange = new TextRange(from, to);
                             String annotationStyle = RESOURCES.getCSS().pairProgramminig();
-                            markerRegistration = textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle);
+                            //markerRegistration = textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle);
+                            cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
                             // full path start with /, so substring
                             Message liveResourceChangeMessage = new FluxMessageBuilder().with(event)//
                                                                                         .buildLiveResourceChangeMessage();
