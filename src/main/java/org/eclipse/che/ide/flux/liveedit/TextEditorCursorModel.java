@@ -1,13 +1,20 @@
 package org.eclipse.che.ide.flux.liveedit;
 
 
+import com.google.gwt.core.shared.GWT;
+import com.google.inject.Inject;
+import org.eclipse.che.ide.api.editor.EditorAgent;
+import org.eclipse.che.ide.api.editor.EditorPartPresenter;
 import org.eclipse.che.ide.api.editor.text.Position;
 import org.eclipse.che.ide.api.editor.document.Document;
 import org.eclipse.che.ide.api.editor.events.CursorActivityEvent;
 import org.eclipse.che.ide.api.editor.events.CursorActivityHandler;
 import org.eclipse.che.ide.api.editor.text.TextPosition;
 
+import org.eclipse.che.ide.api.editor.text.TextRange;
 import org.eclipse.che.ide.api.editor.texteditor.CursorModelWithHandler;
+import org.eclipse.che.ide.api.editor.texteditor.TextEditorPresenter;
+import org.eclipse.che.ide.resource.Path;
 import org.eclipse.che.ide.util.ListenerManager;
 import org.eclipse.che.ide.util.ListenerManager.Dispatcher;
 import org.eclipse.che.ide.util.ListenerRegistrar.Remover;
@@ -21,10 +28,17 @@ class TextEditorCursorModel implements CursorModelWithHandler, CursorActivityHan
 
     private final Document document;
     private final ListenerManager<CursorHandler> cursorHandlerManager = ListenerManager.create();
+    private final CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
+    private EditorAgent editorAgent;
+    private Path path;
+    private TextEditorPresenter textEditor;
+    private EditorPartPresenter openedEditor;
 
-    public TextEditorCursorModel(final Document document) {
+    public TextEditorCursorModel(final Document document, CursorHandlerForPairProgramming cursorHandlerForPairProgramming, EditorAgent editorAgent) {
         this.document = document;
         this.document.addCursorHandler(this);
+        this.cursorHandlerForPairProgramming = cursorHandlerForPairProgramming;
+        this.editorAgent = editorAgent;
     }
 
     @Override
@@ -47,8 +61,14 @@ class TextEditorCursorModel implements CursorModelWithHandler, CursorActivityHan
 
     private void dispatchCursorChange(final boolean isExplicitChange) {
         final TextPosition position = this.document.getCursorPosition();
-
-
+//        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
+//        TextRange textRange = new TextRange(position, position);
+//        path = new Path(document.getFile().getPath());
+//        if (openedEditor instanceof TextEditorPresenter){
+//            textEditor  = (TextEditorPresenter)openedEditor;
+//        }
+//        String annotationStyle = RESOURCES.getCSS().pairProgramminig();
+//        cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
         cursorHandlerManager.dispatch(new Dispatcher<CursorModelWithHandler.CursorHandler>() {
             @Override
             public void dispatch(CursorHandler listener) {
