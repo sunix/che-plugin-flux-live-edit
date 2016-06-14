@@ -45,5 +45,9 @@ public class FluxResourceChangedEventDataOverlay extends JavaScriptObject {
                                                     return this.addedCharacters;
                                                     }-*/;
 
+    public final native String getChannelName() /*-{
+        return this.channelName;
+    }-*/;
+
 
 }
