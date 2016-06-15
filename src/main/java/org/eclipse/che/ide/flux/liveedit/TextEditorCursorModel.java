@@ -59,26 +59,21 @@ class TextEditorCursorModel implements CursorModelWithHandler, CursorActivityHan
         return this.cursorHandlerManager.add(handler);
     }
 
-    private void dispatchCursorChange(final boolean isExplicitChange) {
+    private void addMultiCursors() {
         final TextPosition position = this.document.getCursorPosition();
-//        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
-//        TextRange textRange = new TextRange(position, position);
-//        path = new Path(document.getFile().getPath());
-//        if (openedEditor instanceof TextEditorPresenter){
-//            textEditor  = (TextEditorPresenter)openedEditor;
-//        }
-//        String annotationStyle = RESOURCES.getCSS().pairProgramminig();
-//        cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
-        cursorHandlerManager.dispatch(new Dispatcher<CursorModelWithHandler.CursorHandler>() {
-            @Override
-            public void dispatch(CursorHandler listener) {
-                listener.onCursorChange(position.getLine(), position.getCharacter(), isExplicitChange);
-            }
-        });
+        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
+        TextRange textRange = new TextRange(position, position);
+        path = new Path(document.getFile().getPath());
+        openedEditor = editorAgent.getOpenedEditor(path);
+        if (openedEditor instanceof TextEditorPresenter){
+            textEditor  = (TextEditorPresenter)openedEditor;
+        }
+        String annotationStyle = RESOURCES.getCSS().pairProgramminig();
+        cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
     }
 
     @Override
     public void onCursorActivity(final CursorActivityEvent event) {
-        dispatchCursorChange(true);
+        addMultiCursors();
     }
 }
