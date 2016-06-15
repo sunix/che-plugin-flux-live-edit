@@ -69,6 +69,9 @@ class TextEditorCursorModel implements CursorModelWithHandler, CursorActivityHan
             textEditor  = (TextEditorPresenter)openedEditor;
         }
         String annotationStyle = RESOURCES.getCSS().pairProgramminig();
+        if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
+            cursorHandlerForPairProgramming.clearMark();
+        }
         cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
     }
 
