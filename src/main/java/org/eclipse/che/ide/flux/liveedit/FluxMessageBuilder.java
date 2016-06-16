@@ -39,7 +39,7 @@ public class FluxMessageBuilder {
                    .withRemovedCharCount(event.getRemoveCharCount());
     }
 
-    private FluxMessageBuilder withRemovedCharCount(int removeCharCount) {
+    public FluxMessageBuilder withRemovedCharCount(int removeCharCount) {
         this.removeCharCount = removeCharCount;
         return this;
     }
