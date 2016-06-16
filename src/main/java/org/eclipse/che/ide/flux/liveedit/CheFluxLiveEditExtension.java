@@ -102,6 +102,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
     private DocumentChangeEvent eventForFlux;
     private TextPosition cursorPos;
+    private boolean isDocumentChanged = false;
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
@@ -130,27 +131,6 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
         sendFluxMessageOnDocumentModelChanged();
     }
 
-    private void addMarker(FluxResourceChangedEventDataOverlay event,boolean cursorOnly){
-        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
-        path = new Path(documentMain.getFile().getPath());
-        openedEditor = editorAgent.getOpenedEditor(path);
-        if (openedEditor instanceof TextEditorPresenter){
-            textEditor  = (TextEditorPresenter)openedEditor;
-        }
-
-        int offset = event.getOffset();
-        Log.info(CheFluxLiveEditExtension.class,offset);
-        if (event.getRemovedCharCount()==0 && !cursorOnly){
-            offset ++;
-        }
-        TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
-        TextRange textRange = new TextRange(markerPosition, markerPosition);
-        String annotationStyle = RESOURCES.getCSS().pairProgramminig();
-        if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
-            cursorHandlerForPairProgramming.clearMark();
-        }
-        cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
-    }
 
     private void injectSocketIO() {
         SocketIOResources ioresources = GWT.create(SocketIOResources.class);
@@ -253,12 +233,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 String annotationStyle = RESOURCES.getCSS().pairProgramminig();
 
                 int offset = event.getOffset();
-                offset += 14;
-                Log.info(CheFluxLiveEditExtension.class,offset);
-                if (event.getRemovedCharCount()==0){
-                    offset ++;
-                }else if (event.getRemovedCharCount()==-1){
-                    offset --;
+                if (event.getRemovedCharCount()==-100){
                     TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
                     TextRange textRange = new TextRange(markerPosition, markerPosition);
                     if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
@@ -267,6 +242,9 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                     cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
                     isUpdatingModel = false;
                     return;
+                }
+                if (event.getRemovedCharCount()==0){
+                    offset ++;
                 }
                 String addedCharacters = event.getAddedCharacters();
                 TextPosition cursorPosition = document.getCursorPosition();
@@ -278,7 +256,6 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                     cursorHandlerForPairProgramming.clearMark();
                 }
                 cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
-
                 isUpdatingModel = false;
             }
         });
@@ -372,6 +349,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                         if (socket != null) {
                             Message liveResourceChangeMessage = new FluxMessageBuilder().with(event)//
                                                                                         .buildLiveResourceChangeMessage();
+                            isDocumentChanged = true;
                             if (isUpdatingModel) {
                                 return;
                             }
@@ -404,9 +382,14 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
 
     private void sendCursorPosition() {
         if (socket != null) {
-            TextPosition offset = this.documentMain.getCursorPosition();
-            Log.info(CheFluxLiveEditExtension.class,offset.getCharacter());
-            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset.getCharacter()).withRemovedCharCount(-1).buildLiveResourceChangeMessage();
+            path = new Path(documentMain.getFile().getPath());
+            openedEditor = editorAgent.getOpenedEditor(path);
+            if (openedEditor instanceof TextEditorPresenter){
+                textEditor  = (TextEditorPresenter)openedEditor;
+            }
+            int offset = textEditor.getCursorOffset();
+            Log.info(CheFluxLiveEditExtension.class,offset);
+            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withRemovedCharCount(-100).buildLiveResourceChangeMessage();
             if (isUpdatingModel) {
                 return;
             }
@@ -416,6 +399,10 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
 
     @Override
     public void onCursorActivity(final CursorActivityEvent event) {
+        if (isDocumentChanged){
+            isDocumentChanged = false;
+            return;
+        }
         sendCursorPosition();
     }
 
