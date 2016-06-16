@@ -219,7 +219,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 isUpdatingModel = true;
 
                 final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
-                path = new Path(documentMain.getFile().getPath());
+                path = new Path(document.getFile().getPath());
                 openedEditor = editorAgent.getOpenedEditor(path);
                 if (openedEditor instanceof TextEditorPresenter){
                     textEditor  = (TextEditorPresenter)openedEditor;
