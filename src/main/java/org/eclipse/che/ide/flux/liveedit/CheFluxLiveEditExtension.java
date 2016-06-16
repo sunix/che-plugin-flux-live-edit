@@ -91,23 +91,17 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private DtoUnmarshallerFactory               dtoUnmarshallerFactory;
 
     private EditorAgent editorAgent;
-    private EditorPartPresenter activeEditor;
     private TextEditorPresenter textEditor;
     private EditorPartPresenter openedEditor;
-    private HasTextMarkers.MarkerRegistration markerRegistration;
     private Path path;
-    private CursorModelWithHandler cursorModel;
     private Document documentMain;
     private final ListenerManager<CursorHandler> cursorHandlerManager = ListenerManager.create();
     private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
-    private DocumentChangeEvent eventForFlux;
-    private TextPosition cursorPos;
     private boolean isDocumentChanged = false;
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
                                     final EventBus eventBus,
-                                    final MachineManager machineManager,
                                     final MachineServiceClient machineServiceClient,
                                     final DtoUnmarshallerFactory dtoUnmarshallerFactory,
                                     final AppContext appContext,
