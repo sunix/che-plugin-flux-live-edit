@@ -70,7 +70,6 @@ import com.google.web.bindery.event.shared.EventBus;
 import org.eclipse.che.ide.resource.Path;
 
 import static org.eclipse.che.ide.api.notification.ReadState.READ;
-import static org.eclipse.che.ide.api.notification.StatusNotification.Status.PROGRESS;
 import static org.eclipse.che.ide.api.notification.StatusNotification.Status.SUCCESS;
 import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMode.FLOAT_MODE;
 
@@ -229,8 +228,6 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 }
 
                 isUpdatingModel = true;
-
-                final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
                 path = new Path(document.getFile().getPath());
                 openedEditor = editorAgent.getOpenedEditor(path);
                 if (openedEditor instanceof TextEditorPresenter){
@@ -360,7 +357,6 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private void sendFluxMessageOnDocumentModelChanged() {
 
         cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
-        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
         eventBus.addHandler(DocumentReadyEvent.TYPE, new DocumentReadyHandler() {
             @Override
             public void onDocumentReady(DocumentReadyEvent event) {
