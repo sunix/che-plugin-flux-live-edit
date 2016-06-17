@@ -234,7 +234,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 if (openedEditor instanceof TextEditorPresenter){
                     textEditor  = (TextEditorPresenter)openedEditor;
                 }
-                String annotationStyle = RESOURCES.getCSS().pairProgramminig();
+                String annotationStyle = "pairProgramminigUser2";
 
                 int offset = event.getOffset();
                 if (event.getRemovedCharCount()==-100){
