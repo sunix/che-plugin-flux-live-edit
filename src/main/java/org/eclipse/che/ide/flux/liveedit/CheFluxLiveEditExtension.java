@@ -37,6 +37,9 @@ import org.eclipse.che.ide.api.editor.texteditor.TextEditorPresenter;
 import org.eclipse.che.ide.api.extension.Extension;
 import org.eclipse.che.ide.api.machine.MachineManager;
 import org.eclipse.che.ide.api.machine.MachineServiceClient;
+import org.eclipse.che.ide.api.notification.Notification;
+import org.eclipse.che.ide.api.notification.NotificationManager;
+import org.eclipse.che.ide.api.notification.StatusNotification;
 import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
@@ -65,6 +68,11 @@ import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;
 
 import org.eclipse.che.ide.resource.Path;
+
+import static org.eclipse.che.ide.api.notification.ReadState.READ;
+import static org.eclipse.che.ide.api.notification.StatusNotification.Status.PROGRESS;
+import static org.eclipse.che.ide.api.notification.StatusNotification.Status.SUCCESS;
+import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMode.FLOAT_MODE;
 
 
 @Extension(title = "Che Flux extension", version = "1.0.0")
@@ -98,6 +106,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private final ListenerManager<CursorHandler> cursorHandlerManager = ListenerManager.create();
     private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
     private boolean isDocumentChanged = false;
+    private NotificationManager notificationManager;
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
@@ -106,7 +115,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                                     final DtoUnmarshallerFactory dtoUnmarshallerFactory,
                                     final AppContext appContext,
                                     final CommandManager commandManager,
-                                    final CommandPropertyValueProviderRegistry commandPropertyValueProviderRegistry, EditorAgent editorAgent) {
+                                    final CommandPropertyValueProviderRegistry commandPropertyValueProviderRegistry, EditorAgent editorAgent, NotificationManager notificationManager) {
         this.dtoUnmarshallerFactory = dtoUnmarshallerFactory;
         this.commandManager = commandManager;
         this.messageBus = messageBusProvider.getMessageBus();
@@ -115,6 +124,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
         this.appContext = appContext;
         this.machineServiceClient = machineServiceClient;
         this.editorAgent = editorAgent;
+        this.notificationManager = notificationManager;
 
         injectSocketIO();
 
@@ -235,6 +245,12 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                     }
                     cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
                     isUpdatingModel = false;
+                    return;
+                }
+                if (openedEditor == null){
+                    StatusNotification statusNotification = new StatusNotification(document.getFile().getPath()+" is being edited",SUCCESS,FLOAT_MODE);
+                    statusNotification.setState(READ);
+                    notificationManager.notify(statusNotification);
                     return;
                 }
                 if (event.getRemovedCharCount()==0){
