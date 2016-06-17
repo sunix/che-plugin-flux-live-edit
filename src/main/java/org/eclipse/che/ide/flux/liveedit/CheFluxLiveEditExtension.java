@@ -107,6 +107,8 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
     private boolean isDocumentChanged = false;
     private NotificationManager notificationManager;
+    private static Map<String,CursorHandlerForPairProgramming> cursorHandlers = new HashMap<String,CursorHandlerForPairProgramming>();
+    private static int userCount = 0;
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
@@ -234,7 +236,21 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 if (openedEditor instanceof TextEditorPresenter){
                     textEditor  = (TextEditorPresenter)openedEditor;
                 }
-                String annotationStyle = "pairProgramminigUser2";
+
+                String annotationStyle;
+                if (cursorHandlers.get(event.getUsername())==null){
+                    cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
+                    cursorHandlerForPairProgramming.setUser(event.getUsername());
+                    if (userCount==5){
+                        userCount =0;
+                    }
+                    userCount++;
+                    cursorHandlerForPairProgramming.setUserId(userCount);
+                    cursorHandlers.put(event.getUsername(),cursorHandlerForPairProgramming);
+                }
+
+                cursorHandlerForPairProgramming = cursorHandlers.get(event.getUsername());
+                annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
 
                 int offset = event.getOffset();
                 if (event.getRemovedCharCount()==-100){
@@ -244,9 +260,12 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                         cursorHandlerForPairProgramming.clearMark();
                     }
                     cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
+                    cursorHandlers.remove(event.getUsername());
+                    cursorHandlers.put(event.getUsername(),cursorHandlerForPairProgramming);
                     isUpdatingModel = false;
                     return;
                 }
+
                 if (openedEditor == null){
                     StatusNotification statusNotification = new StatusNotification(document.getFile().getPath()+" is being edited",SUCCESS,FLOAT_MODE);
                     statusNotification.setState(READ);
@@ -266,6 +285,8 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                     cursorHandlerForPairProgramming.clearMark();
                 }
                 cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
+                cursorHandlers.remove(event.getUsername());
+                cursorHandlers.put(event.getUsername(),cursorHandlerForPairProgramming);
                 isUpdatingModel = false;
             }
         });
