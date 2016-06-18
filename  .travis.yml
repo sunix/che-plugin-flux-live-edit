@@ -1,2 +1,2 @@
 language: java
-mvn clean install -Dmaven.test.skip -Dfindbugs.skip
+mvn clean install -Dfindbugs.skip
