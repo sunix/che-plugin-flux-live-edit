@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.eclipse.che.ide.flux.liveedit;
 
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONParser;
 import org.eclipse.che.ide.api.editor.document.Document;
 import org.eclipse.che.ide.api.editor.events.DocumentChangeEvent;
 import org.eclipse.che.ide.socketio.Message;
@@ -23,6 +25,8 @@ public class FluxMessageBuilder {
     private int    removeCharCount;
     private String project;
     private String resource;
+    private String username;
+    private String channelName;
 
     public FluxMessageBuilder with(Document document) {
         fullPath = document.getFile().getPath().substring(1);
@@ -49,6 +53,16 @@ public class FluxMessageBuilder {
         return this;
     }
 
+    public FluxMessageBuilder withUserName(String userName){
+        this.username = userName;
+        return this;
+    }
+
+    public FluxMessageBuilder withChannelName(String channelName){
+        this.channelName = channelName;
+        return this;
+    }
+
     public FluxMessageBuilder withAddedCharacters(String addedCharacters) {
         this.addedCharacters = JsonUtils.escapeValue(addedCharacters);
         return this;
@@ -56,7 +70,7 @@ public class FluxMessageBuilder {
 
     public Message buildResourceRequestMessage() {
         String json = "{"//
-                      + "\"username\":\"USER\","//
+                      + "\"username\":\""+username+"\","//
                       + "\"project\":\"" + project + "\","//
                       + "\"resource\":\"" + resource + "\"" //
                       + "}";
@@ -67,9 +81,10 @@ public class FluxMessageBuilder {
 
     public Message buildLiveResourceChangeMessage() {
         String json = "{"//
-                      + "\"username\":\"USER\","//
+                      + "\"username\":\""+username+"\","//
                       + "\"project\":\"" + project + "\","//
                       + "\"resource\":\"" + resource + "\"," //
+                      + "\"channelName\":\"" + channelName + "\"," //
                       + "\"offset\":" + offset + "," //
                       + "\"removedCharCount\":" + removeCharCount + "," //
                       + "\"addedCharacters\": " + addedCharacters //
