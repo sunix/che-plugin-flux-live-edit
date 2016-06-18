@@ -100,7 +100,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
     private boolean isDocumentChanged = false;
     private NotificationManager notificationManager;
-    private static Map<String,CursorHandlerForPairProgramming> cursorHandlers = new HashMap<String,CursorHandlerForPairProgramming>();
+    private static Map<String,CursorHandlerForPairProgramming> cursorHandlers = new HashMap<String,CursorHandlerForPairProgramming>(); //if this is not static same user will have multiple cursor colours
     private static int userCount = 0;
     private static final String channelName = "USER";
     private String userId;
@@ -371,6 +371,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 documentMain = event.getDocument();
                 setCursorHandler();
                 final DocumentHandle documentHandle = documentMain.getDocumentHandle();
+                /*here withUserName method sets the channel name*/
                 Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
@@ -378,6 +379,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                     @Override
                     public void onDocumentChange(DocumentChangeEvent event) {
                         if (socket != null) {
+                            /*here withUserName method sets the channel name and the withchannelName sets the username*/
                             Message liveResourceChangeMessage = new FluxMessageBuilder().with(event).withUserName(channelName).withChannelName(userId)//
                                                                                         .buildLiveResourceChangeMessage();
                             isDocumentChanged = true;
@@ -420,6 +422,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
             }
             int offset = textEditor.getCursorOffset();
             Log.info(CheFluxLiveEditExtension.class,offset);
+            /*here withUserName method sets the channel name and the withchannelName sets the username*/
             Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withRemovedCharCount(-100).withUserName(channelName).withChannelName(userId).buildLiveResourceChangeMessage();
             if (isUpdatingModel) {
                 return;
