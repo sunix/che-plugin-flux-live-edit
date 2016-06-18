@@ -40,6 +40,7 @@ import org.eclipse.che.ide.api.machine.MachineServiceClient;
 import org.eclipse.che.ide.api.notification.Notification;
 import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.notification.StatusNotification;
+import org.eclipse.che.ide.client.StyleInjector;
 import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
@@ -108,6 +109,9 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private NotificationManager notificationManager;
     private static Map<String,CursorHandlerForPairProgramming> cursorHandlers = new HashMap<String,CursorHandlerForPairProgramming>();
     private static int userCount = 0;
+    private static final String channelName = "USER";
+    private String userId;
+
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
@@ -128,6 +132,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
         this.notificationManager = notificationManager;
 
         injectSocketIO();
+        injectCssStyles();
 
         connectToFluxOnProjectLoaded();
 
@@ -136,6 +141,14 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
         sendFluxMessageOnDocumentModelChanged();
     }
 
+
+    private void injectCssStyles(){
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser1 { outline: 1px solid #f3ff20; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser2 { outline: 1px solid #10ff22; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser3 { outline: 1px solid #00a1ff; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser4 { outline: 1px solid #ff00fb; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser5 { outline: 1px solid #10fdff; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+    }
 
     private void injectSocketIO() {
         SocketIOResources ioresources = GWT.create(SocketIOResources.class);
@@ -235,20 +248,20 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 }
 
                 String annotationStyle;
-                if (cursorHandlers.get(event.getUsername())==null){
+                String username = event.getChannelName();
+                if (cursorHandlers.get(username)==null){
                     cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
-                    cursorHandlerForPairProgramming.setUser(event.getUsername());
+                    cursorHandlerForPairProgramming.setUser(username);
                     if (userCount==5){
                         userCount =0;
                     }
                     userCount++;
                     cursorHandlerForPairProgramming.setUserId(userCount);
-                    cursorHandlers.put(event.getUsername(),cursorHandlerForPairProgramming);
+                    cursorHandlers.put(username,cursorHandlerForPairProgramming);
                 }
 
-                cursorHandlerForPairProgramming = cursorHandlers.get(event.getUsername());
+                cursorHandlerForPairProgramming = cursorHandlers.get(username);
                 annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
-
                 int offset = event.getOffset();
                 if (event.getRemovedCharCount()==-100){
                     TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
@@ -257,8 +270,8 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                         cursorHandlerForPairProgramming.clearMark();
                     }
                     cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
-                    cursorHandlers.remove(event.getUsername());
-                    cursorHandlers.put(event.getUsername(),cursorHandlerForPairProgramming);
+                    cursorHandlers.remove(username);
+                    cursorHandlers.put(username,cursorHandlerForPairProgramming);
                     isUpdatingModel = false;
                     return;
                 }
@@ -282,13 +295,13 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                     cursorHandlerForPairProgramming.clearMark();
                 }
                 cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
-                cursorHandlers.remove(event.getUsername());
-                cursorHandlers.put(event.getUsername(),cursorHandlerForPairProgramming);
+                cursorHandlers.remove(username);
+                cursorHandlers.put(username,cursorHandlerForPairProgramming);
                 isUpdatingModel = false;
             }
         });
 
-        socket.emit("connectToChannel", JsonUtils.safeEval("{\"channel\" : \"USER\"}"));
+        socket.emit("connectToChannel", JsonUtils.safeEval("{\"channel\" : \""+channelName+"\"}"));
     }
 
 
@@ -360,21 +373,19 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
         eventBus.addHandler(DocumentReadyEvent.TYPE, new DocumentReadyHandler() {
             @Override
             public void onDocumentReady(DocumentReadyEvent event) {
+                userId = "user" + Math.random();
                 liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
-
                 documentMain = event.getDocument();
                 setCursorHandler();
                 final DocumentHandle documentHandle = documentMain.getDocumentHandle();
-
-                //cursorModel = new TextEditorCursorModel(document,cursorHandlerForPairProgramming ,editorAgent,socket);
-                Message message = new FluxMessageBuilder().with(documentMain) //
+                Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
                 documentHandle.getDocEventBus().addHandler(DocumentChangeEvent.TYPE, new DocumentChangeHandler() {
                     @Override
                     public void onDocumentChange(DocumentChangeEvent event) {
                         if (socket != null) {
-                            Message liveResourceChangeMessage = new FluxMessageBuilder().with(event)//
+                            Message liveResourceChangeMessage = new FluxMessageBuilder().with(event).withUserName(channelName).withChannelName(userId)//
                                                                                         .buildLiveResourceChangeMessage();
                             isDocumentChanged = true;
                             if (isUpdatingModel) {
@@ -416,7 +427,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
             }
             int offset = textEditor.getCursorOffset();
             Log.info(CheFluxLiveEditExtension.class,offset);
-            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withRemovedCharCount(-100).buildLiveResourceChangeMessage();
+            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withRemovedCharCount(-100).withUserName(channelName).withChannelName(userId).buildLiveResourceChangeMessage();
             if (isUpdatingModel) {
                 return;
             }
