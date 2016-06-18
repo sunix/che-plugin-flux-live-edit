@@ -11,12 +11,10 @@
 package org.eclipse.che.ide.flux.liveedit;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gwt.user.client.rpc.core.java.util.ArrayList_CustomFieldSerializer;
 import org.eclipse.che.api.machine.shared.dto.MachineProcessDto;
 import org.eclipse.che.api.machine.shared.dto.event.MachineProcessEvent;
 import org.eclipse.che.api.promises.client.Operation;
@@ -32,15 +30,11 @@ import org.eclipse.che.ide.api.editor.text.Position;
 import org.eclipse.che.ide.api.editor.text.TextPosition;
 import org.eclipse.che.ide.api.editor.text.TextRange;
 import org.eclipse.che.ide.api.editor.texteditor.CursorModelWithHandler;
-import org.eclipse.che.ide.api.editor.texteditor.HasTextMarkers;
 import org.eclipse.che.ide.api.editor.texteditor.TextEditorPresenter;
 import org.eclipse.che.ide.api.extension.Extension;
-import org.eclipse.che.ide.api.machine.MachineManager;
 import org.eclipse.che.ide.api.machine.MachineServiceClient;
-import org.eclipse.che.ide.api.notification.Notification;
 import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.notification.StatusNotification;
-import org.eclipse.che.ide.client.StyleInjector;
 import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
@@ -50,7 +44,6 @@ import org.eclipse.che.ide.socketio.Message;
 import org.eclipse.che.ide.socketio.SocketIOOverlay;
 import org.eclipse.che.ide.socketio.SocketIOResources;
 import org.eclipse.che.ide.socketio.SocketOverlay;
-import org.eclipse.che.ide.ui.listbox.CustomListBoxResources;
 import org.eclipse.che.ide.util.ListenerManager;
 import org.eclipse.che.ide.util.ListenerRegistrar;
 import org.eclipse.che.ide.util.loging.Log;
