@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.eclipse.che.core:che-core-commons-gwt:4.3.0-RC2-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/eclipse/che/core/che-core-commons-gwt/4.3.0-RC2-SNAPSHOT/che-core-commons-gwt-4.3.0-RC2-20160613.191859-29.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/eclipse/che/core/che-core-commons-gwt/4.3.0-RC2-SNAPSHOT/che-core-commons-gwt-4.3.0-RC2-20160613.191859-29-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/eclipse/che/core/che-core-commons-gwt/4.3.0-RC2-SNAPSHOT/che-core-commons-gwt-4.3.0-RC2-20160613.191859-29-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
