@@ -256,6 +256,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 cursorHandlerForPairProgramming = cursorHandlers.get(username);
                 annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
                 int offset = event.getOffset();
+                /*if removed count equals to -100 that means there is only a cursor change */
                 if (event.getRemovedCharCount()==-100){
                     TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
                     TextRange textRange = new TextRange(markerPosition, markerPosition);
@@ -423,6 +424,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
             int offset = textEditor.getCursorOffset();
             Log.info(CheFluxLiveEditExtension.class,offset);
             /*here withUserName method sets the channel name and the withchannelName sets the username*/
+            /*if removed count equals to -100 that means there is only a cursor change */
             Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withRemovedCharCount(-100).withUserName(channelName).withChannelName(userId).buildLiveResourceChangeMessage();
             if (isUpdatingModel) {
                 return;
