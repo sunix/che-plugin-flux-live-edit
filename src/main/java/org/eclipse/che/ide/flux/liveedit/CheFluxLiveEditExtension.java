@@ -11,12 +11,10 @@
 package org.eclipse.che.ide.flux.liveedit;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gwt.user.client.rpc.core.java.util.ArrayList_CustomFieldSerializer;
 import org.eclipse.che.api.machine.shared.dto.MachineProcessDto;
 import org.eclipse.che.api.machine.shared.dto.event.MachineProcessEvent;
 import org.eclipse.che.api.promises.client.Operation;
@@ -27,17 +25,16 @@ import org.eclipse.che.ide.api.editor.EditorAgent;
 import org.eclipse.che.ide.api.editor.EditorPartPresenter;
 import org.eclipse.che.ide.api.editor.document.Document;
 import org.eclipse.che.ide.api.editor.document.DocumentHandle;
-import org.eclipse.che.ide.api.editor.events.DocumentChangeEvent;
-import org.eclipse.che.ide.api.editor.events.DocumentChangeHandler;
-import org.eclipse.che.ide.api.editor.events.DocumentReadyEvent;
-import org.eclipse.che.ide.api.editor.events.DocumentReadyHandler;
+import org.eclipse.che.ide.api.editor.events.*;
+import org.eclipse.che.ide.api.editor.text.Position;
 import org.eclipse.che.ide.api.editor.text.TextPosition;
 import org.eclipse.che.ide.api.editor.text.TextRange;
-import org.eclipse.che.ide.api.editor.texteditor.HasTextMarkers;
+import org.eclipse.che.ide.api.editor.texteditor.CursorModelWithHandler;
 import org.eclipse.che.ide.api.editor.texteditor.TextEditorPresenter;
 import org.eclipse.che.ide.api.extension.Extension;
-import org.eclipse.che.ide.api.machine.MachineManager;
 import org.eclipse.che.ide.api.machine.MachineServiceClient;
+import org.eclipse.che.ide.api.notification.NotificationManager;
+import org.eclipse.che.ide.api.notification.StatusNotification;
 import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
 import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
@@ -47,7 +44,8 @@ import org.eclipse.che.ide.socketio.Message;
 import org.eclipse.che.ide.socketio.SocketIOOverlay;
 import org.eclipse.che.ide.socketio.SocketIOResources;
 import org.eclipse.che.ide.socketio.SocketOverlay;
-import org.eclipse.che.ide.ui.listbox.CustomListBoxResources;
+import org.eclipse.che.ide.util.ListenerManager;
+import org.eclipse.che.ide.util.ListenerRegistrar;
 import org.eclipse.che.ide.util.loging.Log;
 import org.eclipse.che.ide.websocket.MessageBus;
 import org.eclipse.che.ide.websocket.MessageBusProvider;
@@ -65,9 +63,13 @@ import com.google.web.bindery.event.shared.EventBus;
 
 import org.eclipse.che.ide.resource.Path;
 
+import static org.eclipse.che.ide.api.notification.ReadState.READ;
+import static org.eclipse.che.ide.api.notification.StatusNotification.Status.SUCCESS;
+import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMode.FLOAT_MODE;
+
 
 @Extension(title = "Che Flux extension", version = "1.0.0")
-public class CheFluxLiveEditExtension {
+public class CheFluxLiveEditExtension{
 
     private Map<String, Document>                liveDocuments   = new HashMap<String, Document>();
 
@@ -90,21 +92,28 @@ public class CheFluxLiveEditExtension {
     private DtoUnmarshallerFactory               dtoUnmarshallerFactory;
 
     private EditorAgent editorAgent;
-    private EditorPartPresenter activeEditor;
     private TextEditorPresenter textEditor;
     private EditorPartPresenter openedEditor;
-    private HasTextMarkers.MarkerRegistration markerRegistration;
     private Path path;
+    private Document documentMain;
+    private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
+    private boolean isDocumentChanged = false;
+    private NotificationManager notificationManager;
+    private static Map<String,CursorHandlerForPairProgramming> cursorHandlers = new HashMap<String,CursorHandlerForPairProgramming>(); //if this is not static same user will have multiple cursor colours
+    private static int userCount = 0;
+    private static final String channelName = "USER";
+    private String userId;
+    private CursorModelForPairProgramming cursorModelForPairProgramming;
+
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
                                     final EventBus eventBus,
-                                    final MachineManager machineManager,
                                     final MachineServiceClient machineServiceClient,
                                     final DtoUnmarshallerFactory dtoUnmarshallerFactory,
                                     final AppContext appContext,
                                     final CommandManager commandManager,
-                                    final CommandPropertyValueProviderRegistry commandPropertyValueProviderRegistry, EditorAgent editorAgent) {
+                                    final CommandPropertyValueProviderRegistry commandPropertyValueProviderRegistry, EditorAgent editorAgent, NotificationManager notificationManager) {
         this.dtoUnmarshallerFactory = dtoUnmarshallerFactory;
         this.commandManager = commandManager;
         this.messageBus = messageBusProvider.getMessageBus();
@@ -113,8 +122,10 @@ public class CheFluxLiveEditExtension {
         this.appContext = appContext;
         this.machineServiceClient = machineServiceClient;
         this.editorAgent = editorAgent;
+        this.notificationManager = notificationManager;
 
         injectSocketIO();
+        injectCssStyles();
 
         connectToFluxOnProjectLoaded();
 
@@ -123,6 +134,14 @@ public class CheFluxLiveEditExtension {
         sendFluxMessageOnDocumentModelChanged();
     }
 
+
+    private void injectCssStyles(){
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser1 { outline: 1px solid #f3ff20; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser2 { outline: 1px solid #10ff22; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser3 { outline: 1px solid #00a1ff; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser4 { outline: 1px solid #ff00fb; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+        com.google.gwt.dom.client.StyleInjector.inject(".pairProgramminigUser5 { outline: 1px solid #10fdff; animation: blinker 1s linear infinite;} @keyframes blinker { 50% { opacity: 0.0; }}");
+    }
 
     private void injectSocketIO() {
         SocketIOResources ioresources = GWT.create(SocketIOResources.class);
@@ -213,16 +232,96 @@ public class CheFluxLiveEditExtension {
                 if (document == null) {
                     return;
                 }
-                String addedCharacters = event.getAddedCharacters();
+
                 isUpdatingModel = true;
+                path = new Path(document.getFile().getPath());
+                openedEditor = editorAgent.getOpenedEditor(path);
+                if (openedEditor instanceof TextEditorPresenter){
+                    textEditor  = (TextEditorPresenter)openedEditor;
+                }
+
+                String annotationStyle;
+                String username = event.getChannelName();
+                updateCursorHandler(username);
+
+                cursorHandlerForPairProgramming = cursorHandlers.get(username);
+                annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
+                int offset = event.getOffset();
+
+                if (openedEditor == null){
+                    StatusNotification statusNotification = new StatusNotification(document.getFile().getPath()+" is being edited",SUCCESS,FLOAT_MODE);
+                    statusNotification.setState(READ);
+                    notificationManager.notify(statusNotification);
+                    return;
+                }
+                if (event.getRemovedCharCount()==0){
+                    offset ++;
+                }
+                String addedCharacters = event.getAddedCharacters();
                 TextPosition cursorPosition = document.getCursorPosition();
                 document.replace(event.getOffset(), event.getRemovedCharCount(), addedCharacters);
                 document.setCursorPosition(cursorPosition);
+                TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
+                TextRange textRange = new TextRange(markerPosition, markerPosition);
+                if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
+                    cursorHandlerForPairProgramming.clearMark();
+                }
+                cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
+                cursorHandlers.remove(username);
+                cursorHandlers.put(username,cursorHandlerForPairProgramming);
                 isUpdatingModel = false;
             }
         });
 
-        socket.emit("connectToChannel", JsonUtils.safeEval("{\"channel\" : \"USER\"}"));
+        socket.on("liveCursorOffsetChanged", new Consumer<FluxResourceChangedEventDataOverlay>() {
+            @Override
+            public void accept(FluxResourceChangedEventDataOverlay event) {
+                Document document = liveDocuments.get("/" + event.getProject() + "/" + event.getResource());
+                if (document == null) {
+                    return;
+                }
+
+                isUpdatingModel = true;
+                path = new Path(document.getFile().getPath());
+                openedEditor = editorAgent.getOpenedEditor(path);
+                if (openedEditor instanceof TextEditorPresenter){
+                    textEditor  = (TextEditorPresenter)openedEditor;
+                }
+
+                String annotationStyle;
+                String username = event.getChannelName();
+                updateCursorHandler(username);
+
+                cursorHandlerForPairProgramming = cursorHandlers.get(username);
+                annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
+                int offset = event.getOffset();
+                /*if removed count equals to -100 that means there is only a cursor change */
+                    TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
+                    TextRange textRange = new TextRange(markerPosition, markerPosition);
+                    if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
+                        cursorHandlerForPairProgramming.clearMark();
+                    }
+                    cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
+                    cursorHandlers.remove(username);
+                    cursorHandlers.put(username,cursorHandlerForPairProgramming);
+                    isUpdatingModel = false;
+            }
+        });
+
+        socket.emit("connectToChannel", JsonUtils.safeEval("{\"channel\" : \""+channelName+"\"}"));
+    }
+
+    private void updateCursorHandler(String username){
+        if (cursorHandlers.get(username)==null){
+            cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
+            cursorHandlerForPairProgramming.setUser(username);
+            if (userCount==5){
+                userCount =0;
+            }
+            userCount++;
+            cursorHandlerForPairProgramming.setUserId(userCount);
+            cursorHandlers.put(username,cursorHandlerForPairProgramming);
+        }
     }
 
     public static native SocketIOOverlay getSocketIO()/*-{
@@ -230,46 +329,53 @@ public class CheFluxLiveEditExtension {
                                                       }-*/;
 
     private void connectToFluxOnFluxProcessStarted() {
-        String machineId = appContext.getDevMachine().getId();
-        final Unmarshallable<MachineProcessEvent> unmarshaller = dtoUnmarshallerFactory.newWSUnmarshaller(MachineProcessEvent.class);
-        final String processStateChannel = "machine:process:" + machineId;
-        final MessageHandler handler = new SubscriptionHandler<MachineProcessEvent>(unmarshaller) {
-            @Override
-            protected void onMessageReceived(MachineProcessEvent result) {
-                if (MachineProcessEvent.EventType.STARTED.equals(result.getEventType())) {
-                    final int processId = result.getProcessId();
-                    machineServiceClient.getProcesses(appContext.getDevMachine().getId()).then(new Operation<List<MachineProcessDto>>() {
-                        @Override
-                        public void apply(List<MachineProcessDto> descriptors) throws OperationException {
-                            if (descriptors.isEmpty()) {
-                                return;
-                            }
+        eventBus.addHandler(ProjectExplorerLoadedEvent.getType(), new ProjectExplorerLoadedEvent.ProjectExplorerLoadedHandler() {
 
-                            for (final MachineProcessDto machineProcessDto : descriptors) {
-                                if (machineProcessDto.getPid() == processId) {
-                                     new Timer() {
-                                        @Override
-                                        public void run() {
-                                            if (connectIfFluxMicroservice(machineProcessDto)) {
-                                                // break;
-                                            }
+            @Override
+            public void onProjectsLoaded(ProjectExplorerLoadedEvent projectExplorerLoadedEvent) {
+                String machineId = appContext.getDevMachine().getId();
+                final Unmarshallable<MachineProcessEvent> unmarshaller = dtoUnmarshallerFactory.newWSUnmarshaller(MachineProcessEvent.class);
+                final String processStateChannel = "machine:process:" + machineId;
+                final MessageHandler handler = new SubscriptionHandler<MachineProcessEvent>(unmarshaller) {
+                    @Override
+                    protected void onMessageReceived(MachineProcessEvent result) {
+                        if (MachineProcessEvent.EventType.STARTED.equals(result.getEventType())) {
+                            final int processId = result.getProcessId();
+                            machineServiceClient.getProcesses(appContext.getDevMachine().getId()).then(new Operation<List<MachineProcessDto>>() {
+                                @Override
+                                public void apply(List<MachineProcessDto> descriptors) throws OperationException {
+                                    if (descriptors.isEmpty()) {
+                                        return;
+                                    }
+
+                                    for (final MachineProcessDto machineProcessDto : descriptors) {
+                                        if (machineProcessDto.getPid() == processId) {
+                                            new Timer() {
+                                                @Override
+                                                public void run() {
+                                                    if (connectIfFluxMicroservice(machineProcessDto)) {
+                                                        // break;
+                                                    }
+                                                }
+                                            }.schedule(8000);
+                                            return;
                                         }
-                                    }.schedule(8000);
-                                    return;
+                                    }
                                 }
-                            }
+
+                            });
                         }
+                    }
 
-                    });
-                }
+                    @Override
+                    protected void onErrorReceived(Throwable exception) {
+                        Log.error(getClass(), exception);
+                    }
+                };
+                wsSubscribe(processStateChannel, handler);
             }
+        });
 
-            @Override
-            protected void onErrorReceived(Throwable exception) {
-                Log.error(getClass(), exception);
-            }
-        };
-        wsSubscribe(processStateChannel, handler);
     }
 
     private void wsSubscribe(String wsChannel, MessageHandler handler) {
@@ -281,46 +387,28 @@ public class CheFluxLiveEditExtension {
     }
 
     private void sendFluxMessageOnDocumentModelChanged() {
-        final MultiCursorResources RESOURCES = GWT.create(MultiCursorResources.class);
+
+        cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
         eventBus.addHandler(DocumentReadyEvent.TYPE, new DocumentReadyHandler() {
             @Override
             public void onDocumentReady(DocumentReadyEvent event) {
+                userId = "user" + Math.random();
                 liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
-
-
-                Document document = event.getDocument();
-                final DocumentHandle documentHandle = document.getDocumentHandle();
-
-                Message message = new FluxMessageBuilder().with(document) //
+                documentMain = event.getDocument();
+                final DocumentHandle documentHandle = documentMain.getDocumentHandle();
+                cursorModelForPairProgramming = new CursorModelForPairProgramming(documentMain,socket,editorAgent,channelName,userId);
+                /*here withUserName method sets the channel name*/
+                Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId).withUserName(channelName) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
                 documentHandle.getDocEventBus().addHandler(DocumentChangeEvent.TYPE, new DocumentChangeHandler() {
                     @Override
                     public void onDocumentChange(DocumentChangeEvent event) {
-
-                        if (markerRegistration!= null){
-                            markerRegistration.clearMark();
-                        }
                         if (socket != null) {
-                            path = new Path(event.getDocument().getDocument().getFile().getPath());
-                            openedEditor = editorAgent.getOpenedEditor(path);
-                            if (openedEditor instanceof TextEditorPresenter){
-                                textEditor  = (TextEditorPresenter)openedEditor;
-                            }
-
-                            int pos = event.getOffset();
-                            if (event.getRemoveCharCount()==0){
-                                pos++;
-                            }
-                            final TextPosition from = textEditor.getDocument().getPositionFromIndex(pos);
-                            final TextPosition to = textEditor.getDocument().getPositionFromIndex(pos);
-
-                            final TextRange textRange = new TextRange(from, to);
-                            String annotationStyle = RESOURCES.getCSS().pairProgramminig();
-                            markerRegistration = textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle);
-                            // full path start with /, so substring
-                            Message liveResourceChangeMessage = new FluxMessageBuilder().with(event)//
+                            /*here withUserName method sets the channel name and the withchannelName sets the username*/
+                            Message liveResourceChangeMessage = new FluxMessageBuilder().with(event).withUserName(channelName).withChannelName(userId)//
                                                                                         .buildLiveResourceChangeMessage();
+                            isDocumentChanged = true;
                             if (isUpdatingModel) {
                                 return;
                             }
