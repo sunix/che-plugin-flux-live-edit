@@ -99,8 +99,6 @@ public class FluxMessageBuilder {
                 + "\"resource\":\"" + resource + "\"," //
                 + "\"channelName\":\"" + channelName + "\"," //
                 + "\"offset\":" + offset + "," //
-                + "\"removedCharCount\":" + removeCharCount + "," //
-                + "\"addedCharacters\": " + addedCharacters //
                 + "}";
         return new Message().withType("liveCursorOffsetChanged")//
                 .withJsonContent(JsonUtils.unsafeEval(json));
