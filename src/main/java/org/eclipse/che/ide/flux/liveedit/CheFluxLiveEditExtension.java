@@ -69,7 +69,7 @@ import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMod
 
 
 @Extension(title = "Che Flux extension", version = "1.0.0")
-public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorActivityHandler {
+public class CheFluxLiveEditExtension{
 
     private Map<String, Document>                liveDocuments   = new HashMap<String, Document>();
 
@@ -96,7 +96,6 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private EditorPartPresenter openedEditor;
     private Path path;
     private Document documentMain;
-    private final ListenerManager<CursorHandler> cursorHandlerManager = ListenerManager.create();
     private CursorHandlerForPairProgramming cursorHandlerForPairProgramming;
     private boolean isDocumentChanged = false;
     private NotificationManager notificationManager;
@@ -104,6 +103,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
     private static int userCount = 0;
     private static final String channelName = "USER";
     private String userId;
+    private CursorModelForPairProgramming cursorModelForPairProgramming;
 
 
     @Inject
@@ -395,8 +395,8 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 userId = "user" + Math.random();
                 liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
                 documentMain = event.getDocument();
-                setCursorHandler();
                 final DocumentHandle documentHandle = documentMain.getDocumentHandle();
+                cursorModelForPairProgramming = new CursorModelForPairProgramming(documentMain,socket,editorAgent,channelName,userId);
                 /*here withUserName method sets the channel name*/
                 Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId).withUserName(channelName) //
                                                           .buildResourceRequestMessage();
@@ -419,55 +419,5 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 });
             }
         });
-    }
-
-    @Override
-    public void setCursorPosition(int offset) {
-        TextPosition position = documentMain.getPositionFromIndex(offset);
-        documentMain.setCursorPosition(position);
-    }
-
-    @Override
-    public Position getCursorPosition() {
-        TextPosition position = documentMain.getCursorPosition();
-        int offset = documentMain.getIndexFromPosition(position);
-        return new Position(offset);
-    }
-
-    @Override
-    public ListenerRegistrar.Remover addCursorHandler(CursorHandler handler) {
-        return this.cursorHandlerManager.add(handler);
-    }
-
-    private void sendCursorPosition() {
-        if (socket != null) {
-            path = new Path(documentMain.getFile().getPath());
-            openedEditor = editorAgent.getOpenedEditor(path);
-            if (openedEditor instanceof TextEditorPresenter){
-                textEditor  = (TextEditorPresenter)openedEditor;
-            }
-            int offset = textEditor.getCursorOffset();
-            Log.info(CheFluxLiveEditExtension.class,offset);
-            /*here withUserName method sets the channel name and the withchannelName sets the username*/
-            /*if removed count equals to -100 that means there is only a cursor change */
-            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withUserName(channelName).withChannelName(userId).buildLiveCursorOffsetChangeMessage();
-            if (isUpdatingModel) {
-                return;
-            }
-            socket.emit(liveResourceChangeMessage);
-        }
-    }
-
-    @Override
-    public void onCursorActivity(final CursorActivityEvent event) {
-        if (isDocumentChanged){
-            isDocumentChanged = false;
-            return;
-        }
-        sendCursorPosition();
-    }
-
-    private void setCursorHandler(){
-        this.documentMain.addCursorHandler(this);
     }
 }
