@@ -242,33 +242,11 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
 
                 String annotationStyle;
                 String username = event.getChannelName();
-                if (cursorHandlers.get(username)==null){
-                    cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
-                    cursorHandlerForPairProgramming.setUser(username);
-                    if (userCount==5){
-                        userCount =0;
-                    }
-                    userCount++;
-                    cursorHandlerForPairProgramming.setUserId(userCount);
-                    cursorHandlers.put(username,cursorHandlerForPairProgramming);
-                }
+                updateCursorHandler(username);
 
                 cursorHandlerForPairProgramming = cursorHandlers.get(username);
                 annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
                 int offset = event.getOffset();
-                /*if removed count equals to -100 that means there is only a cursor change */
-                if (event.getRemovedCharCount()==-100){
-                    TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
-                    TextRange textRange = new TextRange(markerPosition, markerPosition);
-                    if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
-                        cursorHandlerForPairProgramming.clearMark();
-                    }
-                    cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
-                    cursorHandlers.remove(username);
-                    cursorHandlers.put(username,cursorHandlerForPairProgramming);
-                    isUpdatingModel = false;
-                    return;
-                }
 
                 if (openedEditor == null){
                     StatusNotification statusNotification = new StatusNotification(document.getFile().getPath()+" is being edited",SUCCESS,FLOAT_MODE);
@@ -295,9 +273,56 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
             }
         });
 
+        socket.on("liveCursorOffsetChanged", new Consumer<FluxResourceChangedEventDataOverlay>() {
+            @Override
+            public void accept(FluxResourceChangedEventDataOverlay event) {
+                Document document = liveDocuments.get("/" + event.getProject() + "/" + event.getResource());
+                if (document == null) {
+                    return;
+                }
+
+                isUpdatingModel = true;
+                path = new Path(document.getFile().getPath());
+                openedEditor = editorAgent.getOpenedEditor(path);
+                if (openedEditor instanceof TextEditorPresenter){
+                    textEditor  = (TextEditorPresenter)openedEditor;
+                }
+
+                String annotationStyle;
+                String username = event.getChannelName();
+                updateCursorHandler(username);
+
+                cursorHandlerForPairProgramming = cursorHandlers.get(username);
+                annotationStyle = "pairProgramminigUser"+ cursorHandlerForPairProgramming.getUserId();
+                int offset = event.getOffset();
+                /*if removed count equals to -100 that means there is only a cursor change */
+                    TextPosition markerPosition = textEditor.getDocument().getPositionFromIndex(offset);
+                    TextRange textRange = new TextRange(markerPosition, markerPosition);
+                    if (cursorHandlerForPairProgramming.getMarkerRegistration()!= null){
+                        cursorHandlerForPairProgramming.clearMark();
+                    }
+                    cursorHandlerForPairProgramming.setMarkerRegistration(textEditor.getHasTextMarkers().addMarker(textRange,annotationStyle));
+                    cursorHandlers.remove(username);
+                    cursorHandlers.put(username,cursorHandlerForPairProgramming);
+                    isUpdatingModel = false;
+            }
+        });
+
         socket.emit("connectToChannel", JsonUtils.safeEval("{\"channel\" : \""+channelName+"\"}"));
     }
 
+    private void updateCursorHandler(String username){
+        if (cursorHandlers.get(username)==null){
+            cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
+            cursorHandlerForPairProgramming.setUser(username);
+            if (userCount==5){
+                userCount =0;
+            }
+            userCount++;
+            cursorHandlerForPairProgramming.setUserId(userCount);
+            cursorHandlers.put(username,cursorHandlerForPairProgramming);
+        }
+    }
 
     public static native SocketIOOverlay getSocketIO()/*-{
                                                       return $wnd.io;
@@ -373,7 +398,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
                 setCursorHandler();
                 final DocumentHandle documentHandle = documentMain.getDocumentHandle();
                 /*here withUserName method sets the channel name*/
-                Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId) //
+                Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId).withUserName(channelName) //
                                                           .buildResourceRequestMessage();
                 socket.emit(message);
                 documentHandle.getDocEventBus().addHandler(DocumentChangeEvent.TYPE, new DocumentChangeHandler() {
@@ -425,7 +450,7 @@ public class CheFluxLiveEditExtension implements CursorModelWithHandler, CursorA
             Log.info(CheFluxLiveEditExtension.class,offset);
             /*here withUserName method sets the channel name and the withchannelName sets the username*/
             /*if removed count equals to -100 that means there is only a cursor change */
-            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withRemovedCharCount(-100).withUserName(channelName).withChannelName(userId).buildLiveResourceChangeMessage();
+            Message liveResourceChangeMessage = new FluxMessageBuilder().with(documentMain).withOffset(offset).withUserName(channelName).withChannelName(userId).buildLiveCursorOffsetChangeMessage();
             if (isUpdatingModel) {
                 return;
             }

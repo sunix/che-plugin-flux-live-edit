@@ -72,7 +72,8 @@ public class FluxMessageBuilder {
         String json = "{"//
                       + "\"username\":\""+username+"\","//
                       + "\"project\":\"" + project + "\","//
-                      + "\"resource\":\"" + resource + "\"" //
+                      + "\"resource\":\"" + resource + "\","//
+                      + "\"channelName\":\"" + channelName + "\"" //
                       + "}";
 
         return new Message().withType("getResourceRequest")//
@@ -91,6 +92,20 @@ public class FluxMessageBuilder {
                       + "}";
         return new Message().withType("liveResourceChanged")//
                                 .withJsonContent(JsonUtils.unsafeEval(json));
+    }
+
+    public Message buildLiveCursorOffsetChangeMessage() {
+        String json = "{"//
+                + "\"username\":\""+username+"\","//
+                + "\"project\":\"" + project + "\","//
+                + "\"resource\":\"" + resource + "\"," //
+                + "\"channelName\":\"" + channelName + "\"," //
+                + "\"offset\":" + offset + "," //
+                + "\"removedCharCount\":" + removeCharCount + "," //
+                + "\"addedCharacters\": " + addedCharacters //
+                + "}";
+        return new Message().withType("liveCursorOffsetChanged")//
+                .withJsonContent(JsonUtils.unsafeEval(json));
     }
 
 }
