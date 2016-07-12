@@ -27,7 +27,7 @@ public class FluxMessageBuilder {
     private String channelName;
 
     public FluxMessageBuilder with(Document document) {
-        fullPath = document.getFile().getPath().substring(1);
+        fullPath = document.getFile().getLocation().toString().substring(1);
         project = fullPath.substring(0, fullPath.indexOf('/'));
         resource = fullPath.substring(fullPath.indexOf('/') + 1);
         return this;

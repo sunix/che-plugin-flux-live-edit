@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gwt.user.client.Window;
+import com.google.inject.assistedinject.Assisted;
 import org.eclipse.che.api.machine.shared.dto.MachineProcessDto;
 import org.eclipse.che.api.machine.shared.dto.event.MachineProcessEvent;
 import org.eclipse.che.api.promises.client.Operation;
@@ -35,9 +37,10 @@ import org.eclipse.che.ide.api.extension.Extension;
 import org.eclipse.che.ide.api.machine.MachineServiceClient;
 import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.notification.StatusNotification;
+import org.eclipse.che.ide.extension.machine.client.command.CommandConfiguration;
 import org.eclipse.che.ide.extension.machine.client.command.CommandManager;
 import org.eclipse.che.ide.extension.machine.client.command.valueproviders.CommandPropertyValueProviderRegistry;
-import org.eclipse.che.ide.project.event.ProjectExplorerLoadedEvent;
+import org.eclipse.che.ide.api.workspace.WorkspaceReadyEvent;
 import org.eclipse.che.ide.rest.DtoUnmarshallerFactory;
 import org.eclipse.che.ide.socketio.Consumer;
 import org.eclipse.che.ide.socketio.Message;
@@ -63,9 +66,11 @@ import com.google.web.bindery.event.shared.EventBus;
 
 import org.eclipse.che.ide.resource.Path;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.eclipse.che.ide.api.notification.ReadState.READ;
 import static org.eclipse.che.ide.api.notification.StatusNotification.Status.SUCCESS;
 import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMode.FLOAT_MODE;
+import static org.eclipse.che.ide.extension.machine.client.command.edit.EditCommandsPresenter.PREVIEW_URL_ATTR;
 
 
 @Extension(title = "Che Flux extension", version = "1.0.0")
@@ -104,7 +109,6 @@ public class CheFluxLiveEditExtension{
     private static final String channelName = "USER";
     private String userId;
     private CursorModelForPairProgramming cursorModelForPairProgramming;
-
 
     @Inject
     public CheFluxLiveEditExtension(final MessageBusProvider messageBusProvider,
@@ -149,9 +153,9 @@ public class CheFluxLiveEditExtension{
     }
 
     private void connectToFluxOnProjectLoaded() {
-        eventBus.addHandler(ProjectExplorerLoadedEvent.getType(), new ProjectExplorerLoadedEvent.ProjectExplorerLoadedHandler() {
+        eventBus.addHandler(WorkspaceReadyEvent.getType(), new WorkspaceReadyEvent.WorkspaceReadyHandler() {
             @Override
-            public void onProjectsLoaded(ProjectExplorerLoadedEvent event) {
+            public void onWorkspaceReady(WorkspaceReadyEvent workspaceReadyEvent) {
                 String machineId = appContext.getDevMachine().getId();
                 Promise<List<MachineProcessDto>> processesPromise = machineServiceClient.getProcesses(machineId);
                 processesPromise.then(new Operation<List<MachineProcessDto>>() {
@@ -176,7 +180,7 @@ public class CheFluxLiveEditExtension{
             return false;
         }
         if ("flux".equals(descriptor.getName())) {
-            String urlToSubstitute = "http://${server.port.3000/tcp}";
+            String urlToSubstitute = "http://${server.port.3000}";
             if (commandPropertyValueProviderRegistry == null) {
                 return false;
             }
@@ -188,26 +192,26 @@ public class CheFluxLiveEditExtension{
 
     int trySubstitude = 10;
 
-    public void substituteAndConnect(final String commandLine) {
-        try {
-            commandManager.substituteProperties(commandLine).then(new Operation<String>() {
+    public void substituteAndConnect(final String previewUrl) {
+            commandManager.substituteProperties(previewUrl).then(new Operation<String>() {
                 @Override
-                public void apply(String cmdLine) throws OperationException {
-                    connectToFlux(cmdLine);
+                public void apply(final String url) throws OperationException {
+                    if (url.contains("$")){
+                        Timer t = new Timer() {
+                            @Override
+                            public void run() {
+                               substituteAndConnect(url);
+                            }
+                        };
+                        Log.info(CheFluxLiveEditExtension.class,"Retrieving the preview url for " + url);
+                        t.schedule(1000);
+                        return;
+                    }
+                    connectToFlux(url);
+
+
                 }
             });
-        } catch (Exception e) {
-            if (trySubstitude > 0) {
-                new Timer() {
-                    @Override
-                    public void run() {
-                        substituteAndConnect(commandLine);
-                    }
-                }.schedule(1000);
-                return;
-            }
-            throw e;
-        }
     }
 
     int retryConnectToFlux = 5;
@@ -234,7 +238,7 @@ public class CheFluxLiveEditExtension{
                 }
 
                 isUpdatingModel = true;
-                path = new Path(document.getFile().getPath());
+                path = document.getFile().getLocation();
                 openedEditor = editorAgent.getOpenedEditor(path);
                 if (openedEditor instanceof TextEditorPresenter){
                     textEditor  = (TextEditorPresenter)openedEditor;
@@ -249,7 +253,7 @@ public class CheFluxLiveEditExtension{
                 int offset = event.getOffset();
 
                 if (openedEditor == null){
-                    StatusNotification statusNotification = new StatusNotification(document.getFile().getPath()+" is being edited",SUCCESS,FLOAT_MODE);
+                    StatusNotification statusNotification = new StatusNotification(document.getFile().getLocation().toString()+" is being edited",SUCCESS,FLOAT_MODE);
                     statusNotification.setState(READ);
                     notificationManager.notify(statusNotification);
                     return;
@@ -282,7 +286,7 @@ public class CheFluxLiveEditExtension{
                 }
 
                 isUpdatingModel = true;
-                path = new Path(document.getFile().getPath());
+                path = document.getFile().getLocation();
                 openedEditor = editorAgent.getOpenedEditor(path);
                 if (openedEditor instanceof TextEditorPresenter){
                     textEditor  = (TextEditorPresenter)openedEditor;
@@ -329,53 +333,51 @@ public class CheFluxLiveEditExtension{
                                                       }-*/;
 
     private void connectToFluxOnFluxProcessStarted() {
-        eventBus.addHandler(ProjectExplorerLoadedEvent.getType(), new ProjectExplorerLoadedEvent.ProjectExplorerLoadedHandler() {
+         eventBus.addHandler(WorkspaceReadyEvent.getType(), new WorkspaceReadyEvent.WorkspaceReadyHandler() {
+             @Override
+             public void onWorkspaceReady(WorkspaceReadyEvent workspaceReadyEvent) {
+                 String machineId = appContext.getDevMachine().getId();
+                 final Unmarshallable<MachineProcessEvent> unmarshaller = dtoUnmarshallerFactory.newWSUnmarshaller(MachineProcessEvent.class);
+                 final String processStateChannel = "machine:process:" + machineId;
+                 final MessageHandler handler = new SubscriptionHandler<MachineProcessEvent>(unmarshaller) {
+                     @Override
+                     protected void onMessageReceived(MachineProcessEvent result) {
+                         if (MachineProcessEvent.EventType.STARTED.equals(result.getEventType())) {
+                             final int processId = result.getProcessId();
+                             machineServiceClient.getProcesses(appContext.getDevMachine().getId()).then(new Operation<List<MachineProcessDto>>() {
+                                 @Override
+                                 public void apply(List<MachineProcessDto> descriptors) throws OperationException {
+                                     if (descriptors.isEmpty()) {
+                                         return;
+                                     }
 
-            @Override
-            public void onProjectsLoaded(ProjectExplorerLoadedEvent projectExplorerLoadedEvent) {
-                String machineId = appContext.getDevMachine().getId();
-                final Unmarshallable<MachineProcessEvent> unmarshaller = dtoUnmarshallerFactory.newWSUnmarshaller(MachineProcessEvent.class);
-                final String processStateChannel = "machine:process:" + machineId;
-                final MessageHandler handler = new SubscriptionHandler<MachineProcessEvent>(unmarshaller) {
-                    @Override
-                    protected void onMessageReceived(MachineProcessEvent result) {
-                        if (MachineProcessEvent.EventType.STARTED.equals(result.getEventType())) {
-                            final int processId = result.getProcessId();
-                            machineServiceClient.getProcesses(appContext.getDevMachine().getId()).then(new Operation<List<MachineProcessDto>>() {
-                                @Override
-                                public void apply(List<MachineProcessDto> descriptors) throws OperationException {
-                                    if (descriptors.isEmpty()) {
-                                        return;
-                                    }
+                                     for (final MachineProcessDto machineProcessDto : descriptors) {
+                                         if (machineProcessDto.getPid() == processId) {
+                                             new Timer() {
+                                                 @Override
+                                                 public void run() {
+                                                     if (connectIfFluxMicroservice(machineProcessDto)) {
+                                                         // break;
+                                                     }
+                                                 }
+                                             }.schedule(8000);
+                                             return;
+                                         }
+                                     }
+                                 }
 
-                                    for (final MachineProcessDto machineProcessDto : descriptors) {
-                                        if (machineProcessDto.getPid() == processId) {
-                                            new Timer() {
-                                                @Override
-                                                public void run() {
-                                                    if (connectIfFluxMicroservice(machineProcessDto)) {
-                                                        // break;
-                                                    }
-                                                }
-                                            }.schedule(8000);
-                                            return;
-                                        }
-                                    }
-                                }
+                             });
+                         }
+                     }
 
-                            });
-                        }
-                    }
-
-                    @Override
-                    protected void onErrorReceived(Throwable exception) {
-                        Log.error(getClass(), exception);
-                    }
-                };
-                wsSubscribe(processStateChannel, handler);
-            }
-        });
-
+                     @Override
+                     protected void onErrorReceived(Throwable exception) {
+                         Log.error(getClass(), exception);
+                     }
+                 };
+                 wsSubscribe(processStateChannel, handler);
+             }
+         });
     }
 
     private void wsSubscribe(String wsChannel, MessageHandler handler) {
@@ -386,6 +388,20 @@ public class CheFluxLiveEditExtension{
         }
     }
 
+    private void initCursorHandler(){
+        if (socket!=null){
+            cursorModelForPairProgramming = new CursorModelForPairProgramming(documentMain, socket, editorAgent, channelName, userId);
+            return;
+        }
+        Timer t = new Timer() {
+            @Override
+            public void run() {
+                initCursorHandler();
+            }
+        };
+        t.schedule(1000);
+    }
+
     private void sendFluxMessageOnDocumentModelChanged() {
 
         cursorHandlerForPairProgramming = new CursorHandlerForPairProgramming();
@@ -393,10 +409,10 @@ public class CheFluxLiveEditExtension{
             @Override
             public void onDocumentReady(DocumentReadyEvent event) {
                 userId = "user" + Math.random();
-                liveDocuments.put(event.getDocument().getFile().getPath(), event.getDocument());
+                liveDocuments.put(event.getDocument().getFile().getLocation().toString(), event.getDocument());
                 documentMain = event.getDocument();
                 final DocumentHandle documentHandle = documentMain.getDocumentHandle();
-                cursorModelForPairProgramming = new CursorModelForPairProgramming(documentMain,socket,editorAgent,channelName,userId);
+                initCursorHandler();
                 /*here withUserName method sets the channel name*/
                 Message message = new FluxMessageBuilder().with(documentMain).withChannelName(userId).withUserName(channelName) //
                                                           .buildResourceRequestMessage();

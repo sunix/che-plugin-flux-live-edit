@@ -62,13 +62,12 @@ public class CursorModelForPairProgramming implements CursorModelWithHandler, Cu
     }
     private void sendCursorPosition() {
         if (socket != null) {
-            path = new Path(document.getFile().getPath());
+            path = document.getFile().getLocation();
             openedEditor = editorAgent.getOpenedEditor(path);
             if (openedEditor instanceof TextEditorPresenter){
                 textEditor  = (TextEditorPresenter)openedEditor;
             }
             int offset = textEditor.getCursorOffset();
-            Log.info(CheFluxLiveEditExtension.class,offset);
             /*here withUserName method sets the channel name and the withchannelName sets the username*/
             Message liveResourceChangeMessage = new FluxMessageBuilder().with(document).withOffset(offset).withUserName(channelName).withChannelName(userId).buildLiveCursorOffsetChangeMessage();
             if (isUpdatingModel) {
