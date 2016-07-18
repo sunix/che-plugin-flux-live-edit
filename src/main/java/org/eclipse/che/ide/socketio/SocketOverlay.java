@@ -33,7 +33,7 @@ public class SocketOverlay extends JavaScriptObject {
     public final native void on(String eventName, Runnable runnable)  /*-{
             this.on(eventName,
                 function() {
-                    handler.@java.lang.Runnable::run()();
+                    runnable.@java.lang.Runnable::run()();
                 });
     }-*/;
 
